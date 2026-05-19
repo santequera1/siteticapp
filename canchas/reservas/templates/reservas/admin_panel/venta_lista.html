@@ -2,127 +2,118 @@
 {% load humanize %}
 {% block page_title %}Historial de ventas{% endblock %}
 
-{% block extra_head %}
-<style>
-    .filter-card { background: white; border: 1px solid var(--c-border); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
-    .range-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-    .range-chips a {
-        padding: 7px 14px; border-radius: 999px; background: white; border: 1px solid var(--c-border);
-        font-size: 13px; font-weight: 600; color: var(--c-text-muted); text-decoration: none;
-    }
-    .range-chips a.active { background: var(--c-text); color: white; border-color: var(--c-text); }
-    .filter-row { display: grid; grid-template-columns: 1fr; gap: 8px; }
-    @media (min-width: 700px) { .filter-row { grid-template-columns: repeat(4, 1fr); } }
-    .filter-row label { font-size: 11px; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px; }
-    .filter-row input, .filter-row select { width: 100%; }
-
-    .summary-bar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: var(--c-accent-soft); border: 1px solid #bbf7d0; border-radius: 10px; margin-bottom: 12px; font-size: 13px; flex-wrap: wrap; }
-    .summary-bar strong { color: var(--c-text); }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="section-h" style="margin-bottom: 14px;">
     <div>
         <h2 style="margin: 0;">Historial de ventas</h2>
-        <p style="font-size: 13px; color: var(--c-text-muted); margin: 4px 0 0;">{{ total_count }} venta{{ total_count|pluralize:"s" }} en el filtro.</p>
+        <p style="font-size: 12px; color: var(--c-text-muted); margin: 4px 0 0;">{{ total_count }} venta{{ total_count|pluralize:"s" }} en el filtro.</p>
     </div>
-    <div style="display: flex; gap: 8px;">
-        <a href="{% url 'admin_ventas_export' %}?{{ request.GET.urlencode }}" class="btn-ghost">
+    <div style="display: flex; gap: 6px;">
+        <a href="{% url 'admin_ventas_export' %}?{{ request.GET.urlencode }}" class="btn-ghost" style="padding: 7px 12px; font-size: 12px;">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
-            Exportar CSV
+            CSV
         </a>
-        <a href="{% url 'admin_pos' %}" class="btn-primary">+ Nueva venta</a>
+        <a href="{% url 'admin_pos' %}" class="btn-primary" style="padding: 7px 14px; font-size: 13px;">+ Venta</a>
     </div>
 </div>
 
-<div class="filter-card">
-    <form method="get" id="filterForm">
-        <div class="range-chips">
-            <a href="?" class="{% if not filtros.rango or filtros.rango == 'todos' %}active{% endif %}">Todas</a>
-            <a href="?rango=hoy" class="{% if filtros.rango == 'hoy' %}active{% endif %}">Hoy</a>
-            <a href="?rango=ayer" class="{% if filtros.rango == 'ayer' %}active{% endif %}">Ayer</a>
-            <a href="?rango=semana" class="{% if filtros.rango == 'semana' %}active{% endif %}">7 días</a>
-            <a href="?rango=mes" class="{% if filtros.rango == 'mes' %}active{% endif %}">Este mes</a>
-        </div>
+<button class="filter-toggle" type="button" onclick="document.getElementById('vfilter').classList.toggle('collapsed'); this.querySelector('.fchev').classList.toggle('open');">
+    <span><strong>Filtrar</strong> {% if filtros.rango != 'todos' or filtros.desde or filtros.metodo or filtros.producto or filtros.q %}· activos{% endif %}</span>
+    <svg class="fchev" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition: transform .15s;"><polyline points="6 9 12 15 18 9"/></svg>
+</button>
 
-        <div class="filter-row">
-            <div>
-                <label>Desde</label>
-                <input type="date" name="desde" class="form-input" value="{{ filtros.desde }}">
+<div class="filter-card-compact collapsed" id="vfilter">
+    <div class="filter-body">
+        <form method="get">
+            <div class="chips-row">
+                <a href="?" class="{% if not filtros.rango or filtros.rango == 'todos' %}active{% endif %}">Todas</a>
+                <a href="?rango=hoy" class="{% if filtros.rango == 'hoy' %}active{% endif %}">Hoy</a>
+                <a href="?rango=ayer" class="{% if filtros.rango == 'ayer' %}active{% endif %}">Ayer</a>
+                <a href="?rango=semana" class="{% if filtros.rango == 'semana' %}active{% endif %}">7 días</a>
+                <a href="?rango=mes" class="{% if filtros.rango == 'mes' %}active{% endif %}">Mes</a>
             </div>
-            <div>
-                <label>Hasta</label>
-                <input type="date" name="hasta" class="form-input" value="{{ filtros.hasta }}">
-            </div>
-            <div>
-                <label>Método</label>
-                <select name="metodo" class="form-select">
-                    <option value="">Todos</option>
-                    {% for v, l in metodos_pago %}
-                    <option value="{{ v }}" {% if filtros.metodo == v %}selected{% endif %}>{{ l }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label>Producto</label>
-                <select name="producto" class="form-select">
-                    <option value="">Todos</option>
-                    {% for p in productos %}
-                    <option value="{{ p.pk }}" {% if filtros.producto == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
 
-        <div style="display: flex; gap: 8px; align-items: end; margin-top: 10px;">
-            <div style="flex: 1;">
-                <label style="font-size: 11px; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px;">Buscar</label>
-                <input type="text" name="q" class="form-input" placeholder="Cliente, cancha, producto…" value="{{ filtros.q }}">
+            <div class="filter-grid">
+                <div>
+                    <label>Desde</label>
+                    <input type="date" name="desde" class="form-input" value="{{ filtros.desde }}">
+                </div>
+                <div>
+                    <label>Hasta</label>
+                    <input type="date" name="hasta" class="form-input" value="{{ filtros.hasta }}">
+                </div>
+                <div>
+                    <label>Método</label>
+                    <select name="metodo">
+                        <option value="">Todos</option>
+                        {% for v, l in metodos_pago %}
+                        <option value="{{ v }}" {% if filtros.metodo == v %}selected{% endif %}>{{ l }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Producto</label>
+                    <select name="producto">
+                        <option value="">Todos</option>
+                        {% for p in productos %}
+                        <option value="{{ p.pk }}" {% if filtros.producto == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-            <button type="submit" class="btn-primary">Filtrar</button>
-            {% if filtros.rango != 'todos' or filtros.desde or filtros.hasta or filtros.metodo or filtros.producto or filtros.q %}
-            <a href="?" class="btn-ghost">Limpiar</a>
-            {% endif %}
-        </div>
-    </form>
+
+            <div style="margin-top: 8px;">
+                <label style="font-size: 10px; font-weight: 700; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 2px;">Buscar</label>
+                <input type="text" name="q" class="form-input" placeholder="Cliente, cancha, producto…" value="{{ filtros.q }}" style="padding: 7px 10px; font-size: 13px;">
+            </div>
+
+            <div class="filter-actions">
+                {% if filtros.rango != 'todos' or filtros.desde or filtros.hasta or filtros.metodo or filtros.producto or filtros.q %}
+                <a href="?" class="btn-ghost">Limpiar</a>
+                {% endif %}
+                <button type="submit" class="btn-primary">Filtrar</button>
+            </div>
+        </form>
+    </div>
 </div>
 
-<div class="summary-bar">
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--c-accent-soft); border: 1px solid #bbf7d0; border-radius: 9px; margin-bottom: 10px; font-size: 12px; flex-wrap: wrap;">
     <span>📊 <strong>{{ total_count }}</strong> venta{{ total_count|pluralize:"s" }}</span>
     <span>·</span>
-    <span>💰 Total: <strong>${{ total_monto|floatformat:0|intcomma }}</strong></span>
-    {% if total_count %}<span>·</span><span>Ticket promedio: <strong>${% widthratio total_monto total_count 1 %}</strong></span>{% endif %}
+    <span>💰 <strong>${{ total_monto|floatformat:0|intcomma }}</strong></span>
+    {% if total_count %}<span>·</span><span>Prom: <strong>${% widthratio total_monto total_count 1 %}</strong></span>{% endif %}
 </div>
 
 <div class="card">
     {% if ventas %}
-    <table class="table">
-        <thead>
-            <tr><th>Fecha</th><th>Items</th><th>Método</th><th>Reserva</th><th style="text-align:right;">Total</th></tr>
-        </thead>
-        <tbody>
-            {% for v in ventas %}
-            <tr class="table-row">
-                <td>{{ v.fecha|date:"d/m H:i" }}</td>
-                <td>
-                    {% for it in v.items.all %}
-                        <div style="font-size: 12px;">{{ it.cantidad }}× {{ it.nombre_snapshot }}</div>
-                    {% endfor %}
-                </td>
-                <td><span class="badge badge-confirmada">{{ v.get_metodo_pago_display }}</span></td>
-                <td>
-                    {% if v.reserva %}
-                    <a href="{% url 'admin_reserva_detalle' v.reserva.pk %}" style="color: var(--c-accent); text-decoration: none;">#{{ v.reserva.pk }}</a>
-                    <div style="font-size: 11px; color: var(--c-text-muted);">{{ v.reserva.cliente_nombre }}</div>
-                    {% else %}—{% endif %}
-                </td>
-                <td style="text-align: right; font-weight: 700;">${{ v.total|floatformat:0|intcomma }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% if total_count > 200 %}<p style="padding: 14px; color: var(--c-text-muted); font-size: 12px; text-align: center;">Mostrando las primeras 200 de {{ total_count }}. Usa los filtros o exporta a CSV para ver el resto.</p>{% endif %}
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr><th>Fecha</th><th>Items</th><th>Método</th><th>Reserva</th><th style="text-align:right;">Total</th></tr>
+            </thead>
+            <tbody>
+                {% for v in ventas %}
+                <tr class="table-row">
+                    <td class="nowrap-money">{{ v.fecha|date:"d/m H:i" }}</td>
+                    <td>
+                        {% for it in v.items.all %}
+                            <div style="font-size: 11px;">{{ it.cantidad }}× {{ it.nombre_snapshot }}</div>
+                        {% endfor %}
+                    </td>
+                    <td><span class="badge badge-confirmada">{{ v.get_metodo_pago_display }}</span></td>
+                    <td>
+                        {% if v.reserva %}
+                        <a href="{% url 'admin_reserva_detalle' v.reserva.pk %}" style="color: var(--c-accent); text-decoration: none;">#{{ v.reserva.pk }}</a>
+                        <div style="font-size: 10px; color: var(--c-text-muted);">{{ v.reserva.cliente_nombre }}</div>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td style="text-align: right; font-weight: 700;" class="nowrap-money">${{ v.total|floatformat:0|intcomma }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if total_count > 200 %}<p style="padding: 14px; color: var(--c-text-muted); font-size: 11px; text-align: center;">Mostrando 200 de {{ total_count }}. Filtra o exporta a CSV.</p>{% endif %}
     {% else %}
     <div style="text-align: center; padding: 40px; color: var(--c-text-muted);">No hay ventas con estos filtros.</div>
     {% endif %}

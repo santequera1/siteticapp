@@ -4,32 +4,37 @@
 {% block page_title %}Reservas{% endblock %}
 
 {% block content %}
-<div class="section-h" style="margin-bottom: 18px;">
+<div class="section-h" style="margin-bottom: 14px;">
     <div>
         <h2 style="margin:0;">Reservas</h2>
-        <p style="font-size: 13px; color: var(--c-text-muted); margin: 4px 0 0;">{{ total_count }} resultado{{ total_count|pluralize:"s" }}{% if total_count > 200 %} · mostrando 200{% endif %}</p>
+        <p style="font-size: 12px; color: var(--c-text-muted); margin: 4px 0 0;">{{ total_count }} resultado{{ total_count|pluralize:"s" }}{% if total_count > 200 %} · mostrando 200{% endif %}</p>
     </div>
     <a href="{% url 'admin_reserva_crear' %}" class="btn-primary">+ Nueva reserva</a>
 </div>
 
-<div class="card card-padded" style="margin-bottom: 14px;">
-    <form method="get" id="filterForm">
-        <input type="hidden" name="rango" id="hRango" value="{{ filtro_rango }}">
+<button class="filter-toggle" type="button" onclick="document.getElementById('rfilter').classList.toggle('collapsed'); this.querySelector('.fchev').classList.toggle('open');">
+    <span><strong>Filtrar</strong> {% if filtro_rango or filtro_estado or filtro_cancha or filtro_desde or filtro_hasta %}· activos{% endif %}</span>
+    <svg class="fchev" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition: transform .15s;"><polyline points="6 9 12 15 18 9"/></svg>
+</button>
 
-        <div class="range-chips">
-            <a href="?" class="{% if not filtro_rango and not filtro_fecha and not filtro_desde and not filtro_hasta %}active{% endif %}">Todas</a>
-            <a href="?rango=hoy{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'hoy' %}active{% endif %}">Hoy</a>
-            <a href="?rango=ayer{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'ayer' %}active{% endif %}">Ayer</a>
-            <a href="?rango=manana{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'manana' %}active{% endif %}">Mañana</a>
-            <a href="?rango=semana{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'semana' %}active{% endif %}">Esta semana</a>
-            <a href="?rango=proximas{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'proximas' %}active{% endif %}">Próximas</a>
-            <a href="?rango=pasadas{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'pasadas' %}active{% endif %}">Pasadas</a>
-        </div>
+<div class="filter-card-compact collapsed" id="rfilter">
+    <div class="filter-body">
+        <form method="get">
+            <input type="hidden" name="rango" id="hRango" value="{{ filtro_rango }}">
 
-        <div class="filter-row">
-            <div>
-                <label>Estado</label>
-                <div class="select-wrap">
+            <div class="chips-row">
+                <a href="?" class="{% if not filtro_rango and not filtro_fecha and not filtro_desde and not filtro_hasta %}active{% endif %}">Todas</a>
+                <a href="?rango=hoy{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'hoy' %}active{% endif %}">Hoy</a>
+                <a href="?rango=ayer{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'ayer' %}active{% endif %}">Ayer</a>
+                <a href="?rango=manana{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'manana' %}active{% endif %}">Mañana</a>
+                <a href="?rango=semana{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'semana' %}active{% endif %}">Semana</a>
+                <a href="?rango=proximas{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'proximas' %}active{% endif %}">Próximas</a>
+                <a href="?rango=pasadas{% if filtro_estado %}&estado={{ filtro_estado }}{% endif %}{% if filtro_cancha %}&cancha={{ filtro_cancha }}{% endif %}" class="{% if filtro_rango == 'pasadas' %}active{% endif %}">Pasadas</a>
+            </div>
+
+            <div class="filter-grid">
+                <div>
+                    <label>Estado</label>
                     <select name="estado">
                         <option value="">Todos</option>
                         <option value="pendiente" {% if filtro_estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
@@ -38,84 +43,69 @@
                         <option value="finalizada" {% if filtro_estado == 'finalizada' %}selected{% endif %}>Finalizada</option>
                     </select>
                 </div>
-            </div>
-            <div>
-                <label>Cancha</label>
-                <div class="select-wrap">
+                <div>
+                    <label>Cancha</label>
                     <select name="cancha">
                         <option value="">Todas</option>
-                        {% for c in canchas %}
-                        <option value="{{ c.pk }}" {% if filtro_cancha == c.pk|stringformat:"d" %}selected{% endif %}>{{ c.nombre }}</option>
-                        {% endfor %}
+                        {% for c in canchas %}<option value="{{ c.pk }}" {% if filtro_cancha == c.pk|stringformat:"d" %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
                     </select>
                 </div>
+                <div>
+                    <label>Desde</label>
+                    <input type="date" name="desde" class="form-input" value="{{ filtro_desde }}" onchange="document.getElementById('hRango').value='personalizado';">
+                </div>
+                <div>
+                    <label>Hasta</label>
+                    <input type="date" name="hasta" class="form-input" value="{{ filtro_hasta }}" onchange="document.getElementById('hRango').value='personalizado';">
+                </div>
             </div>
-            <div>
-                <label>Desde</label>
-                <input type="date" name="desde" class="form-input" value="{{ filtro_desde }}" onchange="document.getElementById('hRango').value='personalizado';">
-            </div>
-            <div>
-                <label>Hasta</label>
-                <input type="date" name="hasta" class="form-input" value="{{ filtro_hasta }}" onchange="document.getElementById('hRango').value='personalizado';">
-            </div>
-        </div>
 
-        <div style="display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end;">
-            <a href="?" class="btn-ghost">Limpiar</a>
-            <button type="submit" class="btn-primary">Filtrar</button>
-        </div>
-    </form>
+            <div class="filter-actions">
+                <a href="?" class="btn-ghost">Limpiar</a>
+                <button type="submit" class="btn-primary">Filtrar</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="card">
     {% if reservas %}
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Horario</th>
-                <th>Cancha</th>
-                <th>Cliente</th>
-                <th>Estado</th>
-                <th>Pago</th>
-                <th style="text-align: right;">Total</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in reservas %}
-            <tr class="table-row">
-                <td>{{ r.fecha_inicio|date:"d M Y" }}</td>
-                <td><strong>{{ r.fecha_inicio|time:"H:i" }}</strong> – {{ r.fecha_fin|time:"H:i" }}</td>
-                <td>{{ r.cancha.nombre }}</td>
-                <td>{{ r.cliente_nombre }}<br><small style="color: var(--c-text-muted);">{{ r.cliente_telefono }}</small></td>
-                <td><span class="badge badge-{{ r.estado }}">{{ r.get_estado_display }}</span></td>
-                <td><span class="badge badge-{{ r.estado_pago }}">{{ r.get_estado_pago_display }}</span></td>
-                <td style="text-align: right; font-weight: 700;">${{ r.total|floatformat:0|intcomma }}</td>
-                <td style="text-align: right;">
-                    <a href="{% url 'admin_reserva_detalle' r.pk %}" class="btn-ghost" style="padding: 5px 10px; font-size: 12px;">Ver</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Horario</th>
+                    <th>Cancha</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th>Pago</th>
+                    <th style="text-align: right;">Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reservas %}
+                <tr class="table-row">
+                    <td class="nowrap-money">{{ r.fecha_inicio|date:"d M Y" }}</td>
+                    <td class="nowrap-money"><strong>{{ r.fecha_inicio|time:"H:i" }}</strong> – {{ r.fecha_fin|time:"H:i" }}</td>
+                    <td>{{ r.cancha.nombre }}</td>
+                    <td>{{ r.cliente_nombre }}<br><small style="color: var(--c-text-muted);">{{ r.cliente_telefono }}</small></td>
+                    <td><span class="badge badge-{{ r.estado }}">{{ r.get_estado_display }}</span></td>
+                    <td><span class="badge badge-{{ r.estado_pago }}">{{ r.get_estado_pago_display }}</span></td>
+                    <td style="text-align: right; font-weight: 700;" class="nowrap-money">${{ r.total|floatformat:0|intcomma }}</td>
+                    <td style="text-align: right;">
+                        <a href="{% url 'admin_reserva_detalle' r.pk %}" class="btn-ghost" style="padding: 4px 9px; font-size: 11px;">Ver</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
     <div style="text-align: center; padding: 40px; color: var(--c-text-muted);">
         <p style="margin: 0;">No hay reservas con estos filtros.</p>
     </div>
     {% endif %}
 </div>
-
-<style>
-    .range-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-    .range-chips a {
-        padding: 7px 14px; border-radius: 999px; background: white; border: 1px solid var(--c-border);
-        font-size: 13px; font-weight: 600; color: var(--c-text-muted); text-decoration: none;
-    }
-    .range-chips a:hover { border-color: var(--c-border-strong); }
-    .range-chips a.active { background: var(--c-text); color: white; border-color: var(--c-text); }
-    .filter-row { display: grid; grid-template-columns: 1fr; gap: 8px; }
-    @media (min-width: 700px) { .filter-row { grid-template-columns: repeat(4, 1fr); } }
-    .filter-row label { font-size: 11px; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px; }
-</style>
 {% endblock %}

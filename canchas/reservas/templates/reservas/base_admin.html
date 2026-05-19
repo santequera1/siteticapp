@@ -98,11 +98,88 @@
         .stat-card .stat-trend { font-size: 11px; color: var(--c-text-soft); margin-top: 6px; }
 
         /* Responsive grids reutilizables */
-        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         @media (min-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
         @media (min-width: 900px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
         .two-col { display: grid; grid-template-columns: 1fr; gap: 14px; }
         @media (min-width: 900px) { .two-col { grid-template-columns: 1fr 1fr; gap: 16px; } }
+
+        /* ============ Mobile fixes globales ============ */
+        @media (max-width: 640px) {
+            .content { padding: 12px; }
+            /* KPI cards: tipografía adaptativa */
+            .stat-card { padding: 12px 10px; gap: 8px; }
+            .stat-card .stat-icon { width: 32px; height: 32px; border-radius: 8px; }
+            .stat-card .stat-icon svg { width: 16px; height: 16px; }
+            .stat-card .stat-num { font-size: 18px; }
+            .stat-card .stat-lab { font-size: 11px; }
+
+            /* Tablas: scroll horizontal */
+            .card > .table, .card .table-wrap { overflow-x: auto; }
+            .table { font-size: 13px; }
+            .table th, .table td { padding: 9px 10px; }
+
+            /* Section header */
+            .section-h { flex-wrap: wrap; gap: 8px; }
+            .section-h h2 { font-size: 15px; }
+
+            /* Badges más compactas */
+            .badge { padding: 2px 8px; font-size: 10px; }
+
+            /* Cards padding reducido */
+            .card-padded { padding: 14px; }
+
+            /* Header del admin más compacto */
+            .topbar { padding: 11px 14px; }
+            .topbar h1 { font-size: 15px; }
+        }
+
+        /* Tabla con wrapper para scroll horizontal */
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .table-wrap .table { min-width: 100%; }
+
+        /* Texto que no debe overflow */
+        .nowrap-money { white-space: nowrap; }
+
+        /* ============ Filter card compacto ============ */
+        .filter-card-compact { background: white; border: 1px solid var(--c-border); border-radius: 10px; padding: 10px; margin-bottom: 12px; }
+        .filter-card-compact .chips-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+        .filter-card-compact .chips-row a, .filter-card-compact .chips-row .chip {
+            padding: 5px 11px; border-radius: 999px; background: white; border: 1px solid var(--c-border);
+            font-size: 12px; font-weight: 600; color: var(--c-text-muted); text-decoration: none; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 4px; font-family: inherit;
+        }
+        .filter-card-compact .chips-row a.active, .filter-card-compact .chips-row .chip.active {
+            background: var(--c-text); color: white; border-color: var(--c-text);
+        }
+        .filter-card-compact .filter-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 8px;
+        }
+        @media (min-width: 700px) { .filter-card-compact .filter-grid { grid-template-columns: repeat(4, 1fr); } }
+        .filter-card-compact .filter-grid label {
+            font-size: 10px; font-weight: 700; color: var(--c-text-muted);
+            text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 2px;
+        }
+        .filter-card-compact .filter-grid input,
+        .filter-card-compact .filter-grid select {
+            padding: 7px 10px; padding-right: 28px; font-size: 13px; border-radius: 7px;
+        }
+        .filter-card-compact select { padding-right: 28px !important; }
+        .filter-card-compact .filter-actions {
+            display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px;
+        }
+        .filter-card-compact .filter-actions button,
+        .filter-card-compact .filter-actions a {
+            padding: 7px 14px; font-size: 12px;
+        }
+        /* Collapse toggle para filtros en mobile */
+        .filter-toggle {
+            display: none; padding: 8px 12px; background: white; border: 1px solid var(--c-border);
+            border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--c-text); cursor: pointer;
+            font-family: inherit; width: 100%; text-align: left; margin-bottom: 8px;
+            justify-content: space-between; align-items: center; gap: 8px;
+        }
+        @media (max-width: 640px) { .filter-toggle { display: flex; } .filter-card-compact.collapsed .filter-body { display: none; } }
 
         a.btn-primary, button.btn-primary, .btn-primary {
             background-color: #16a34a !important;
