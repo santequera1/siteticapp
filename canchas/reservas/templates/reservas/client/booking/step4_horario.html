@@ -1,0 +1,92 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Reservar - Elegir Horario{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-8">
+    <!-- Progress -->
+    <div class="flex items-center justify-center gap-2 mb-8">
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">1</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">2</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">3</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">4</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">5</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">6</div>
+    </div>
+
+    <div class="card p-6">
+        <div class="flex items-center gap-3 mb-2">
+            <a href="{% url 'booking_step3' %}" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">Selecciona el horario</h1>
+                <p class="text-sm text-gray-500">{{ cancha.nombre }} | {{ fecha|date:"l d M Y" }} | {{ duracion }}h</p>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% if slots %}
+            <div class="space-y-2 mt-4">
+                {% for slot in slots %}
+                {% if slot.disponible %}
+                <label class="flex items-center justify-between p-4 rounded-lg border-2 border-transparent hover:border-green-500 cursor-pointer transition-all slot-option bg-gray-50">
+                    <input type="radio" name="hora" value="{{ slot.hora }}" class="hidden" required>
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="font-semibold text-gray-800">{{ slot.hora_inicio }} - {{ slot.hora_fin }}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-green-600">${{ slot.precio|floatformat:0 }}</span>
+                        <span class="text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-700">Disponible</span>
+                    </div>
+                </label>
+                {% else %}
+                <div class="flex items-center justify-between p-4 rounded-lg bg-red-50 opacity-60 cursor-not-allowed">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                        <span class="font-semibold text-gray-500 line-through">{{ slot.hora_inicio }} - {{ slot.hora_fin }}</span>
+                    </div>
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-red-100 text-red-700">No disponible</span>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-gray-400 text-lg">No hay horarios disponibles para esta fecha</p>
+                <a href="{% url 'booking_step2' %}" class="btn-secondary mt-4 inline-block">Cambiar fecha</a>
+            </div>
+            {% endif %}
+
+            {% if slots %}
+            <div class="mt-8 flex gap-4">
+                <a href="{% url 'booking_step3' %}" class="btn-secondary flex-1 text-center">Atras</a>
+                <button type="submit" class="btn-primary flex-1">Continuar</button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.slot-option').forEach(label => {
+    label.addEventListener('click', () => {
+        document.querySelectorAll('.slot-option').forEach(l => {
+            l.classList.remove('border-green-500', 'bg-green-50');
+            l.classList.add('bg-gray-50');
+        });
+        label.classList.add('border-green-500', 'bg-green-50');
+        label.classList.remove('bg-gray-50');
+    });
+});
+</script>
+{% endblock %}

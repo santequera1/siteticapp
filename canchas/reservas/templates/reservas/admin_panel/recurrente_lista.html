@@ -1,0 +1,75 @@
+{% extends 'reservas/base_admin.html' %}
+{% load humanize %}
+
+{% block page_title %}Reservas recurrentes{% endblock %}
+
+{% block content %}
+<div class="section-h" style="margin-bottom: 18px;">
+    <div>
+        <h2 style="margin:0;">Reservas recurrentes</h2>
+        <p style="font-size: 13px; color: var(--c-text-muted); margin: 4px 0 0;">Alquileres fijos: equipos, escuelas, clientes regulares</p>
+    </div>
+    <a href="{% url 'admin_recurrente_crear' %}" class="btn-primary">+ Nueva recurrente</a>
+</div>
+
+<div class="card card-padded" style="margin-bottom: 14px;">
+    <form method="get" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <select name="estado" class="form-select" style="max-width: 180px;">
+            <option value="">Todos los estados</option>
+            <option value="activa" {% if filtro_estado == 'activa' %}selected{% endif %}>Activa</option>
+            <option value="pausada" {% if filtro_estado == 'pausada' %}selected{% endif %}>Pausada</option>
+            <option value="cancelada" {% if filtro_estado == 'cancelada' %}selected{% endif %}>Cancelada</option>
+        </select>
+        <select name="cancha" class="form-select" style="max-width: 200px;">
+            <option value="">Todas las canchas</option>
+            {% for c in canchas %}<option value="{{ c.pk }}" {% if filtro_cancha == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn-ghost">Filtrar</button>
+        {% if filtro_estado or filtro_cancha %}<a href="{% url 'admin_recurrentes' %}" class="btn-ghost">Limpiar</a>{% endif %}
+    </form>
+</div>
+
+<div class="card">
+    {% if recurrentes %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Día</th>
+                <th>Cancha</th>
+                <th>Horario</th>
+                <th>Vigencia</th>
+                <th>Cliente</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in recurrentes %}
+            <tr class="table-row">
+                <td><strong>{{ r.get_dia_semana_display }}</strong></td>
+                <td>{{ r.cancha.nombre }}</td>
+                <td>{{ r.hora_inicio }}:00 – {% widthratio r.hora_inicio|add:r.duracion 1 1 %}:00 <small style="color:var(--c-text-muted);">({{ r.duracion }}h)</small></td>
+                <td style="font-size: 12px; color: var(--c-text-muted);">{{ r.fecha_desde|date:"d M Y" }}<br>→ {{ r.fecha_hasta|date:"d M Y" }}</td>
+                <td>{{ r.cliente_nombre }}<br><small style="color: var(--c-text-muted);">{{ r.cliente_telefono }}</small></td>
+                <td>${{ r.precio_efectivo|floatformat:0|intcomma }}</td>
+                <td>
+                    {% if r.estado == 'activa' %}<span class="badge badge-confirmada">Activa</span>
+                    {% elif r.estado == 'pausada' %}<span class="badge badge-pendiente">Pausada</span>
+                    {% else %}<span class="badge badge-cancelada">Cancelada</span>{% endif %}
+                </td>
+                <td style="text-align: right;">
+                    <a href="{% url 'admin_recurrente_editar' r.pk %}" class="btn-ghost" style="padding: 5px 10px; font-size: 12px;">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: var(--c-text-muted);">
+        <p style="margin: 0;">Aún no hay reservas recurrentes.</p>
+        <p style="margin: 6px 0 0; font-size: 13px;">Ej: "Todos los viernes 9pm-11pm, Cancha 2"</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'reservas/base_admin.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block page_title %}Productos{% endblock %}
+
+{% block content %}
+<div class="section-h" style="margin-bottom: 18px;">
+    <div>
+        <h2 style="margin: 0;">Productos del POS</h2>
+        <p style="font-size: 13px; color: var(--c-text-muted); margin: 4px 0 0;">{{ productos.count }} producto{{ productos.count|pluralize:"s" }} en el catálogo.</p>
+    </div>
+    <a href="{% url 'admin_producto_crear' %}" class="btn-primary">+ Nuevo producto</a>
+</div>
+
+<div class="card">
+    {% if productos %}
+    <table class="table">
+        <thead>
+            <tr><th></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for p in productos %}
+            <tr class="table-row">
+                <td style="width: 50px;">
+                    <img src="{% if p.imagen %}{{ p.imagen.url }}{% else %}{% static 'img/logo.webp' %}{% endif %}" alt="" style="width: 36px; height: 36px; object-fit: cover; border-radius: 8px; border: 1px solid var(--c-border); background: white;">
+                </td>
+                <td><strong>{{ p.nombre }}</strong></td>
+                <td>{{ p.get_categoria_display }}</td>
+                <td>${{ p.precio|floatformat:0|intcomma }}</td>
+                <td>{% if p.stock is None %}<small style="color: var(--c-text-muted);">Sin control</small>{% else %}{{ p.stock }}{% endif %}</td>
+                <td>{% if p.is_active %}<span class="badge badge-confirmada">Activo</span>{% else %}<span class="badge badge-cancelada">Inactivo</span>{% endif %}</td>
+                <td style="text-align: right;">
+                    <a href="{% url 'admin_producto_editar' p.pk %}" class="btn-ghost" style="padding: 5px 10px; font-size: 12px;">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: var(--c-text-muted);">
+        <p style="margin: 0;">Aún no hay productos.</p>
+        <p style="margin: 6px 0 0; font-size: 13px;">Crea productos para empezar a vender desde el POS.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

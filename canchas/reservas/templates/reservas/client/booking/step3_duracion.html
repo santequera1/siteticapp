@@ -1,0 +1,64 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Reservar - Duracion{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-8">
+    <!-- Progress -->
+    <div class="flex items-center justify-center gap-2 mb-8">
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">1</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">2</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">3</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">4</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">5</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">6</div>
+    </div>
+
+    <div class="card p-6">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="{% url 'booking_step2' %}" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">Selecciona la duracion</h1>
+                <p class="text-sm text-gray-500">{{ cancha.nombre }} - ${{ cancha.precio_por_hora|floatformat:0 }}/hora</p>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="space-y-3">
+                {% for value, label, precio_total in duraciones_con_precio %}
+                <label class="card border-2 border-transparent hover:border-green-500 p-5 cursor-pointer flex items-center justify-between transition-all duracion-option">
+                    <input type="radio" name="duracion" value="{{ value }}" class="hidden" required>
+                    <div>
+                        <p class="font-bold text-gray-800 text-lg">{{ label }}</p>
+                        <p class="text-sm text-gray-400">{{ value }} x ${{ cancha.precio_por_hora|floatformat:0 }}</p>
+                    </div>
+                    <p class="text-xl font-bold text-green-600">${{ precio_total|floatformat:0 }}</p>
+                </label>
+                {% endfor %}
+            </div>
+
+            <div class="mt-8 flex gap-4">
+                <a href="{% url 'booking_step2' %}" class="btn-secondary flex-1 text-center">Atras</a>
+                <button type="submit" class="btn-primary flex-1">Continuar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.duracion-option').forEach(label => {
+    label.addEventListener('click', () => {
+        document.querySelectorAll('.duracion-option').forEach(l => l.classList.remove('border-green-500'));
+        label.classList.add('border-green-500');
+    });
+});
+</script>
+{% endblock %}

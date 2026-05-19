@@ -1,0 +1,146 @@
+{% extends 'reservas/base.html' %}
+{% load humanize %}
+
+{% block title %}Mis reservas{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page { max-width: 720px; margin: 0 auto; padding: 16px; }
+    .reserva-card { padding: 14px; background: white; border: 1px solid var(--c-border); border-radius: 14px; }
+    .rc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .rc-name { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
+    .rc-meta { font-size: 13px; color: var(--c-text-muted); line-height: 1.5; }
+    .rc-amount { font-size: 18px; font-weight: 700; color: var(--c-accent); text-align: right; }
+    .rc-id { font-size: 11px; color: var(--c-text-muted); text-align: right; }
+    .empty-state { background: white; border: 1px dashed var(--c-border); border-radius: 14px; padding: 40px 16px; text-align: center; color: var(--c-text-muted); }
+    .tabs { display: flex; gap: 6px; padding: 4px; background: white; border: 1px solid var(--c-border); border-radius: 12px; margin-bottom: 14px; }
+    .tabs button { flex: 1; padding: 9px 12px; background: transparent; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; color: var(--c-text-muted); cursor: pointer; font-family: inherit; }
+    .tabs button.active { background: var(--c-text); color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em;">Mis reservas</h1>
+    <p style="font-size: 14px; color: var(--c-text-muted); margin: 0 0 14px;">Tus reservas se guardan en este dispositivo. También puedes consultarlas por teléfono.</p>
+
+    <div class="tabs">
+        <button class="active" id="tabLocal">En este dispositivo (<span id="localCount">0</span>)</button>
+        <button id="tabPhone">Buscar por teléfono</button>
+    </div>
+
+    <!-- Tab: localStorage -->
+    <div id="paneLocal">
+        <div id="localList">
+            <div class="empty-state" style="margin-bottom: 12px;">Cargando…</div>
+        </div>
+    </div>
+
+    <!-- Tab: phone -->
+    <div id="panePhone" style="display: none;">
+        <form method="get" style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <input type="tel" name="telefono" class="form-input" placeholder="Tu teléfono" value="{{ telefono }}" style="flex: 1;">
+            <button type="submit" class="btn-primary">Buscar</button>
+        </form>
+
+        {% if telefono %}
+            {% if reservas %}
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for reserva in reservas %}
+                <div class="reserva-card">
+                    <div class="rc-head">
+                        <div style="min-width: 0;">
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap: wrap; margin-bottom: 4px;">
+                                <strong style="font-size: 15px;">{{ reserva.cancha.nombre }}</strong>
+                                <span class="badge badge-{{ reserva.estado }}">{{ reserva.get_estado_display }}</span>
+                            </div>
+                            <div class="rc-meta">
+                                {{ reserva.fecha_inicio|date:"l d M Y" }}<br>
+                                {{ reserva.fecha_inicio|time:"H:i" }} – {{ reserva.fecha_fin|time:"H:i" }} ({{ reserva.duracion }}h)<br>
+                                {{ reserva.get_tipo_pago_display }} · <span class="badge badge-{{ reserva.estado_pago }}">{{ reserva.get_estado_pago_display }}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="rc-amount">${{ reserva.total|floatformat:0|intcomma }}</div>
+                            <div class="rc-id">#{{ reserva.pk }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p style="margin: 0 0 12px;">No se encontraron reservas con ese teléfono.</p>
+                <a href="{% url 'home' %}" class="btn-primary">Hacer una reserva</a>
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<script>
+(function() {
+    const $ = id => document.getElementById(id);
+    const fmt = n => Math.round(n).toLocaleString('es-CO');
+
+    function formatFecha(iso) {
+        const [y,m,d] = iso.split('-').map(Number);
+        return new Date(y, m-1, d).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
+    function renderLocal() {
+        let arr = [];
+        try { arr = JSON.parse(localStorage.getItem('kamcha_reservas') || '[]'); } catch (e) {}
+        $('localCount').textContent = arr.length;
+
+        const cont = $('localList');
+        if (!arr.length) {
+            cont.innerHTML = `
+                <div class="empty-state">
+                    <p style="margin: 0 0 12px;">Aún no tienes reservas guardadas en este dispositivo.</p>
+                    <a href="{% url 'home' %}" class="btn-primary">Hacer una reserva</a>
+                </div>`;
+            return;
+        }
+
+        cont.innerHTML = arr.map(r => `
+            <div class="reserva-card" style="margin-bottom: 10px;">
+                <div class="rc-head">
+                    <div style="min-width: 0;">
+                        <strong style="font-size: 15px;">${escapeHtml(r.cancha)}</strong>
+                        <div class="rc-meta" style="margin-top: 4px;">
+                            ${formatFecha(r.fecha)}<br>
+                            ${r.hora_inicio} – ${r.hora_fin} (${r.duracion}h)<br>
+                            ${(r.tipo_pago || '').charAt(0).toUpperCase() + (r.tipo_pago || '').slice(1)}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="rc-amount">$${fmt(r.total)}</div>
+                        <div class="rc-id">#${r.id}</div>
+                    </div>
+                </div>
+            </div>`).join('');
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // Tab switching
+    $('tabLocal').addEventListener('click', () => {
+        $('tabLocal').classList.add('active'); $('tabPhone').classList.remove('active');
+        $('paneLocal').style.display = ''; $('panePhone').style.display = 'none';
+    });
+    $('tabPhone').addEventListener('click', () => {
+        $('tabPhone').classList.add('active'); $('tabLocal').classList.remove('active');
+        $('panePhone').style.display = ''; $('paneLocal').style.display = 'none';
+    });
+
+    {% if telefono %}
+        $('tabPhone').click();
+    {% endif %}
+
+    renderLocal();
+})();
+</script>
+{% endblock %}

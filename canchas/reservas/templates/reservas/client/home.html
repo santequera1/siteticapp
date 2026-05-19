@@ -1,0 +1,976 @@
+{% extends 'reservas/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 0 24px; }
+
+    /* ============ Hero ============ */
+    .hero { position: relative; height: 180px; overflow: hidden; margin-bottom: 14px; background-color: #0f172a; }
+    .hero-bg { position: absolute; inset: 0; background-image: url('{% static "img/portada.webp" %}'); background-size: cover; background-position: center; filter: brightness(0.55); }
+    .hero-content { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 22px 16px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; color: white; }
+    .hero h1 { font-size: 24px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
+    .hero p { font-size: 13px; margin: 0; opacity: .92; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
+    @media (min-width: 768px) { .hero { height: 220px; } .hero h1 { font-size: 30px; } }
+
+    /* ============ Reserva rápida ============ */
+    .quick { margin: 0 16px 14px; padding: 14px; background: var(--c-accent-soft); border: 1px solid #bbf7d0; border-radius: 14px; display: none; align-items: center; gap: 12px; }
+    .quick.show { display: flex; }
+    .quick svg { color: var(--c-accent); flex-shrink: 0; }
+    .quick .qt { flex: 1; min-width: 0; }
+    .quick .qt-l { font-size: 11px; color: #15803d; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }
+    .quick .qt-v { font-size: 13px; color: var(--c-text); font-weight: 600; margin-top: 2px; line-height: 1.3; }
+    .quick .qt-btn { background: var(--c-accent); color: white; border: none; padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; font-family: inherit; }
+
+    /* ============ Stepper (más grande y claro) ============ */
+    .stepper { padding: 0 16px; margin-bottom: 12px; }
+    .step-progress { font-size: 12px; font-weight: 700; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .step-progress strong { color: var(--c-accent); }
+    .step-bar { display: flex; align-items: center; gap: 4px; background: white; border: 1px solid var(--c-border); border-radius: 14px; padding: 8px; }
+    .step-bar .step {
+        flex: 1; min-width: 0; padding: 8px 4px; background: transparent; border: none; border-radius: 10px;
+        cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px;
+        transition: background-color .15s; color: var(--c-text-muted);
+        overflow: hidden;
+    }
+    .step-bar .step:active { transform: scale(.97); }
+    .step-bar .step .dot {
+        width: 24px; height: 24px; border-radius: 50%; background: #f1f5f9;
+        font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; transition: all .15s;
+    }
+    .step-bar .step .lab { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .step-bar .step.active { background: var(--c-text); color: white; }
+    .step-bar .step.active .dot { background: white; color: var(--c-text); }
+    .step-bar .step.done { color: var(--c-accent); }
+    .step-bar .step.done .dot { background: var(--c-accent); color: white; }
+    .step-bar .step.done .dot::after { content: '✓'; }
+    .step-bar .step.done .dot > * { display: none; }
+    .step-arrow { color: #cbd5e1; flex-shrink: 0; }
+    @media (max-width: 480px) {
+        .step-bar .step .lab { font-size: 11px; }
+    }
+
+    /* ============ Step panels ============ */
+    .step-panel { padding: 0 16px; display: none; animation: slideIn .25s ease-out; }
+    .step-panel.show { display: block; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .panel-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .panel-h h2 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+    .panel-h .meta { font-size: 12px; color: var(--c-text-muted); }
+
+    /* ============ Step 1: Cancha (cards prominentes) ============ */
+    .type-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .type-chip { padding: 7px 14px; background: white; border: 1px solid var(--c-border); border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--c-text); user-select: none; }
+    .type-chip.active { background: var(--c-text); color: white; border-color: var(--c-text); }
+    .type-chip:active { transform: scale(.96); }
+
+    .court-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 720px) { .court-list { grid-template-columns: repeat(2, 1fr); } }
+    .court-card {
+        display: flex; gap: 0; background: white; border: 2px solid var(--c-border); border-radius: 16px;
+        cursor: pointer; transition: all .15s; overflow: hidden; user-select: none;
+        text-align: left; padding: 0; font-family: inherit; width: 100%; min-height: 110px;
+    }
+    .court-card:active { transform: scale(.99); }
+    .court-card.selected { border-color: var(--c-accent); background: var(--c-accent-soft); box-shadow: 0 0 0 3px rgba(22,163,74,.12); }
+    .court-card .cc-img { width: 110px; flex-shrink: 0; background-color: #e2e8f0; background-size: cover; background-position: center; }
+    .court-card .cc-img.empty { display: flex; align-items: center; justify-content: center; }
+    .court-card .cc-info { flex: 1; padding: 14px 14px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+    .court-card .cc-name { font-size: 16px; font-weight: 700; margin: 0 0 2px; color: var(--c-text); }
+    .court-card .cc-type { font-size: 12px; color: var(--c-text-muted); margin: 0; }
+    .court-card .cc-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 8px; }
+    .court-card .cc-price { font-size: 17px; font-weight: 700; color: var(--c-accent); }
+    .court-card .cc-price small { font-size: 11px; font-weight: 500; color: var(--c-text-muted); }
+    .court-card .cc-libres { font-size: 11px; color: var(--c-text-muted); font-weight: 500; }
+    .court-card .cc-libres strong { color: var(--c-accent); font-weight: 700; }
+    .court-card.selected .cc-libres strong { color: #15803d; }
+
+    /* ============ Step 2: Día y Hora ============ */
+    .summary-strip { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--c-accent-soft); border: 1px solid #bbf7d0; border-radius: 12px; margin-bottom: 12px; font-size: 13px; }
+    .summary-strip .ss-name { font-weight: 700; color: var(--c-text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .summary-strip .ss-meta { color: var(--c-text-muted); font-size: 12px; }
+    .summary-strip .ss-edit { background: white; border: 1px solid #bbf7d0; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--c-accent); cursor: pointer; font-family: inherit; }
+
+    .section-lbl { font-size: 11px; font-weight: 700; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 16px 0 8px; }
+
+    .date-strip { display: flex; gap: 10px; overflow-x: auto; padding: 4px 0 6px; scrollbar-width: none; scroll-snap-type: x mandatory; }
+    .date-strip::-webkit-scrollbar { display: none; }
+    .date-chip {
+        flex: 0 0 auto; min-width: 70px; padding: 12px 10px;
+        background: white; border: 1.5px solid var(--c-border); border-radius: 14px;
+        display: flex; flex-direction: column; align-items: center; gap: 2px;
+        cursor: pointer; transition: all .15s; user-select: none; scroll-snap-align: center; font-family: inherit;
+    }
+    .date-chip:active { transform: scale(.98); }
+    .date-chip.today { border-color: var(--c-accent); }
+    .date-chip.today .day { color: var(--c-accent); }
+    .date-chip.selected { background: var(--c-accent); border-color: var(--c-accent); color: white; box-shadow: 0 4px 12px rgba(22,163,74,.25); }
+    .date-chip .dow { font-size: 11px; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .date-chip.selected .dow { color: rgba(255,255,255,.9); }
+    .date-chip .day { font-size: 20px; font-weight: 700; line-height: 1; }
+    .date-chip.selected .day { color: white; }
+    .date-chip .mon { font-size: 10px; color: var(--c-text-muted); text-transform: uppercase; }
+    .date-chip.selected .mon { color: rgba(255,255,255,.9); }
+
+    .dur-pills { display: flex; gap: 6px; }
+    .dur-pill { flex: 1; padding: 11px; background: white; border: 1.5px solid var(--c-border); border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--c-text); }
+    .dur-pill.active { background: var(--c-text); color: white; border-color: var(--c-text); }
+    .dur-pill:active { transform: scale(.97); }
+
+    .slot-section { margin-bottom: 14px; }
+    .slot-section .ss-h { font-size: 11px; font-weight: 700; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 4px; }
+
+    /* En mobile: una columna grande con chips altos. En tablet+: grid */
+    .slot-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (min-width: 600px) { .slot-list { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 900px) { .slot-list { grid-template-columns: repeat(4, 1fr); } }
+    .slot {
+        background: white; border: 1.5px solid var(--c-border); border-radius: 14px;
+        padding: 14px 12px; min-height: 80px; cursor: pointer; text-align: left;
+        font-family: inherit; display: flex; flex-direction: column; gap: 4px; transition: all .15s; position: relative;
+    }
+    .slot:active { transform: scale(.98); }
+    .slot .hora { font-size: 16px; font-weight: 700; color: var(--c-text); line-height: 1.2; }
+    .slot .precio { font-size: 14px; font-weight: 600; color: var(--c-accent); }
+    .slot .label { font-size: 11px; font-weight: 500; color: var(--c-text-muted); }
+    .slot.disponible:hover { border-color: var(--c-accent); background: var(--c-accent-soft); }
+    .slot.selected { border-color: var(--c-accent); background: var(--c-accent-soft); box-shadow: 0 0 0 3px rgba(22,163,74,.18); }
+    .slot.selected::after { content: '✓'; position: absolute; top: 8px; right: 10px; width: 22px; height: 22px; background: var(--c-accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+    .slot.ocupado { background: #fef2f2; border-color: #fecaca; cursor: not-allowed; opacity: .75; }
+    .slot.ocupado .precio { color: #991b1b; text-decoration: line-through; font-weight: 500; }
+    .slot.ocupado .hora { color: #991b1b; }
+    .slot.parcial { background: #fffbeb; border-color: #fde68a; cursor: not-allowed; opacity: .75; }
+    .slot.parcial .precio { color: #92400e; font-weight: 500; }
+    .slot.pasado { display: none; }
+
+    .legend-inline { display: flex; gap: 14px; flex-wrap: wrap; margin: 0 0 8px; font-size: 11px; color: var(--c-text-muted); }
+    .legend-inline span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend-inline .dot { width: 10px; height: 10px; border-radius: 3px; border: 1px solid; }
+    .legend-inline .dot.libre { background: white; border-color: var(--c-border); }
+    .legend-inline .dot.ocup { background: #fef2f2; border-color: #fecaca; }
+    .legend-inline .dot.parc { background: #fffbeb; border-color: #fde68a; }
+
+    .empty { background: white; border: 1px dashed var(--c-border); border-radius: 14px; padding: 32px 16px; text-align: center; color: var(--c-text-muted); font-size: 14px; }
+
+    .sk { background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%); background-size: 200% 100%; animation: pulse 1.4s ease-in-out infinite; border-radius: 14px; }
+    .sk-slot { height: 80px; }
+    .sk-court { height: 110px; }
+    @keyframes pulse { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ============ Sticky action bar ============ */
+    .step-actions {
+        position: sticky; bottom: 64px; z-index: 30;
+        background: linear-gradient(to top, white 70%, rgba(255,255,255,0));
+        padding: 16px 0 10px; display: flex; gap: 8px; margin-top: 16px;
+    }
+    .step-actions .btn-back { background: white; color: var(--c-text); border: 1px solid var(--c-border); padding: 13px 18px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit; }
+    .step-actions .btn-next { flex: 1; background: var(--c-accent); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .step-actions .btn-next:disabled { background: #cbd5e1; cursor: not-allowed; }
+    @media (min-width: 768px) { .step-actions { position: static; bottom: auto; background: transparent; padding: 18px 0 0; } }
+
+    /* ============ Bottom sheet ============ */
+    .sheet-bg { position: fixed; inset: 0; background: rgba(15,23,42,.6); z-index: 100; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
+    .sheet-bg.open { opacity: 1; pointer-events: auto; }
+    .sheet { background: white; width: 100%; max-width: 520px; border-radius: 22px 22px 0 0; max-height: 92vh; overflow-y: auto; transform: translateY(100%); transition: transform .3s cubic-bezier(.16,.84,.44,1); padding-bottom: env(safe-area-inset-bottom); }
+    .sheet-bg.open .sheet { transform: translateY(0); }
+    .sheet-handle { width: 40px; height: 4px; background: #cbd5e1; border-radius: 2px; margin: 10px auto; }
+    .sheet-body { padding: 4px 18px 24px; }
+    .sheet-body h2 { font-size: 17px; font-weight: 700; margin: 0 0 4px; }
+    .sheet-body .sub { font-size: 13px; color: var(--c-text-muted); margin: 0 0 14px; }
+    .ticket-summary { background: var(--c-accent-soft); border: 1px solid #bbf7d0; border-radius: 14px; padding: 14px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center; }
+    .ts-lab { font-size: 11px; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+    .ts-val { font-size: 14px; font-weight: 700; color: var(--c-text); text-align: right; }
+    .ts-total-lab { font-size: 12px; color: #15803d; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; padding-top: 8px; border-top: 1px solid #bbf7d0; }
+    .ts-total-val { font-size: 22px; font-weight: 700; color: var(--c-accent); text-align: right; padding-top: 8px; border-top: 1px solid #bbf7d0; }
+
+    .fg { margin-bottom: 12px; }
+    .fg label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--c-text); }
+
+    .more-toggle { background: none; border: none; color: var(--c-accent); font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 0; display: flex; align-items: center; gap: 6px; font-family: inherit; margin-bottom: 6px; }
+    .more-toggle .chev { transition: transform .2s; }
+    .more-toggle.open .chev { transform: rotate(180deg); }
+    .more-fields { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+    .more-fields.open { max-height: 220px; }
+
+    .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .pay-opt { padding: 12px; border: 1.5px solid var(--c-border); border-radius: 10px; cursor: pointer; text-align: center; font-size: 13px; font-weight: 600; background: white; color: var(--c-text); font-family: inherit; }
+    .pay-opt.active { border-color: var(--c-accent); background: var(--c-accent-soft); color: var(--c-accent); }
+
+    .sheet-actions { display: flex; gap: 8px; margin-top: 18px; }
+    .sheet-actions .btn-cancel { background: white; color: var(--c-text); border: 1px solid var(--c-border); padding: 14px 18px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit; }
+    .sheet-actions .btn-confirm { flex: 1; background: var(--c-accent); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; }
+    .sheet-actions .btn-confirm:disabled { background: #cbd5e1; cursor: not-allowed; }
+    @media (min-width: 640px) {
+        .sheet-bg { align-items: center; }
+        .sheet { border-radius: 18px; max-width: 480px; }
+        .sheet-handle { display: none; }
+    }
+
+    /* ============ Ticket ============ */
+    .ticket-head { text-align: center; padding-bottom: 16px; border-bottom: 2px dashed var(--c-border); }
+    .ticket-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--c-accent-soft); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+    .ticket-head h2 { margin: 0 0 4px; font-size: 18px; }
+    .ticket-head .code { font-size: 13px; color: var(--c-text-muted); }
+    .ticket-rows { padding: 14px 0; display: flex; flex-direction: column; gap: 8px; }
+    .ticket-row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+    .ticket-row .tr-l { color: var(--c-text-muted); }
+    .ticket-row .tr-v { color: var(--c-text); font-weight: 600; text-align: right; }
+    .ticket-total { display: flex; justify-content: space-between; padding: 12px 0 0; border-top: 1px dashed var(--c-border); font-size: 16px; }
+    .ticket-total strong { color: var(--c-accent); font-size: 20px; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--c-text); color: white; padding: 13px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; opacity: 0; transition: all .25s; z-index: 200; max-width: 92%; text-align: center; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--c-danger); }
+    .toast.success { background: var(--c-accent); }
+
+    /* Contacto */
+    .contact-card { background: white; border: 1px solid var(--c-border); border-radius: 12px; padding: 6px 4px; }
+    .contact-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--c-text); text-decoration: none; font-size: 14px; }
+    .contact-row svg { color: var(--c-accent); flex-shrink: 0; }
+    a.contact-row:hover { background: #f8fafc; border-radius: 8px; }
+
+    /* Banner WhatsApp en step 1 */
+    .wa-banner {
+        background: #25D366; border-radius: 14px; padding: 14px 16px;
+        display: flex; align-items: center; gap: 12px;
+        text-decoration: none; color: white; margin-bottom: 14px;
+        box-shadow: 0 4px 14px rgba(37, 211, 102, .25); transition: transform .15s;
+    }
+    .wa-banner:active { transform: scale(.98); }
+    .wa-banner .wa-ic {
+        width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.18);
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .wa-banner .wa-txt { flex: 1; min-width: 0; }
+    .wa-banner .wa-l { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; opacity: .9; }
+    .wa-banner .wa-v { font-size: 14px; font-weight: 600; margin-top: 2px; }
+    .wa-banner .wa-arrow { flex-shrink: 0; opacity: .9; }
+
+    /* FAB flotante WhatsApp - aparece en todos los pasos */
+    .wa-fab {
+        position: fixed; right: 16px; bottom: 80px; z-index: 40;
+        width: 56px; height: 56px; border-radius: 50%; background: #25D366;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 6px 20px rgba(37, 211, 102, .4); text-decoration: none;
+        transition: transform .15s; color: white;
+    }
+    .wa-fab:hover { transform: scale(1.06); }
+    .wa-fab:active { transform: scale(.94); }
+    @media (min-width: 768px) { .wa-fab { bottom: 30px; right: 30px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <h1>{{ negocio.nombre|default:"Centro Deportivo" }}</h1>
+            <p>Toca una cancha y reserva en pocos segundos</p>
+        </div>
+    </section>
+
+    <!-- Reserva rápida -->
+    <div class="quick" id="quickCard">
+        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <div class="qt">
+            <div class="qt-l">Reserva rápida</div>
+            <div class="qt-v" id="quickText">—</div>
+        </div>
+        <button class="qt-btn" id="quickBtn">Reservar</button>
+    </div>
+
+    <!-- Stepper -->
+    <div class="stepper">
+        <div class="step-progress" id="stepLabel">Paso <strong>1</strong> de 3</div>
+        <div class="step-bar" id="stepperBar">
+            <button class="step active" type="button" data-step="1">
+                <span class="dot">1</span>
+                <span class="lab">Cancha</span>
+            </button>
+            <svg class="step-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            <button class="step" type="button" data-step="2">
+                <span class="dot">2</span>
+                <span class="lab">Día y hora</span>
+            </button>
+            <svg class="step-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            <button class="step" type="button" data-step="3">
+                <span class="dot">3</span>
+                <span class="lab">Confirmar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Paso 1: Cancha -->
+    <section class="step-panel show" data-panel="1">
+        <div class="panel-h">
+            <h2>¿Qué cancha quieres?</h2>
+            <span class="meta" id="courtCountMeta"></span>
+        </div>
+        {% if negocio.telefono %}
+        <a href="https://wa.me/{{ negocio.telefono|cut:" "|cut:"-"|cut:"+" }}?text=Hola%2C%20quiero%20reservar%20una%20cancha%20en%20{{ negocio.nombre|urlencode }}" target="_blank" rel="noopener" class="wa-banner">
+            <span class="wa-ic">
+                <svg width="22" height="22" fill="white" viewBox="0 0 24 24"><path d="M17.5 14.4l-2.6-.75c-.34-.1-.7 0-.95.25l-1.18 1.2c-1.74-.94-3.16-2.35-4.09-4.09l1.2-1.18c.25-.25.35-.6.25-.95L9.4 6.3c-.13-.4-.5-.65-.92-.65H6.06c-.5 0-.92.42-.9.92.11 3.5 1.5 6.85 4 9.35 2.5 2.5 5.85 3.9 9.35 4 .5.03.92-.4.92-.9V16.6c0-.4-.27-.78-.93-.2zM12 2C6.48 2 2 6.48 2 12c0 1.78.47 3.45 1.28 4.9L2 22l5.25-1.27A9.96 9.96 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+            </span>
+            <div class="wa-txt">
+                <div class="wa-l">¿Prefieres reservar por WhatsApp?</div>
+                <div class="wa-v">Escríbenos directamente</div>
+            </div>
+            <svg class="wa-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        {% endif %}
+
+        <div class="type-filter" id="typeFilter">
+            <button class="type-chip active" type="button" data-type="">Todas</button>
+        </div>
+        <div class="court-list" id="courtList">
+            <div class="sk sk-court"></div>
+            <div class="sk sk-court"></div>
+            <div class="sk sk-court"></div>
+        </div>
+
+        {% if negocio.telefono or negocio.direccion %}
+        <div class="section-lbl">Contacto</div>
+        <div class="contact-card">
+            {% if negocio.telefono %}
+            <a href="tel:{{ negocio.telefono }}" class="contact-row">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.5 4.49a1 1 0 01-.5 1.21l-2.26 1.13a11 11 0 005.52 5.52l1.13-2.26a1 1 0 011.21-.5l4.49 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1C9.72 21 3 14.28 3 6V5z"/></svg>
+                <span>{{ negocio.telefono }}</span>
+            </a>
+            {% endif %}
+            {% if negocio.direccion %}
+            <div class="contact-row">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.66 16.66L13.41 20.91a2 2 0 01-2.82 0l-4.25-4.25a8 8 0 1111.31 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span>{{ negocio.direccion }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="step-actions">
+            <button class="btn-next" type="button" id="btnNext1" disabled>
+                Continuar
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
+    </section>
+
+    <!-- Paso 2: Día y Hora combinados -->
+    <section class="step-panel" data-panel="2">
+        <div class="panel-h">
+            <h2>¿Cuándo quieres jugar?</h2>
+        </div>
+
+        <div class="summary-strip">
+            <div style="min-width: 0;">
+                <div class="ss-name" id="ssName">—</div>
+                <div class="ss-meta" id="ssMeta">—</div>
+            </div>
+            <button class="ss-edit" type="button" id="ssEdit">Cambiar</button>
+        </div>
+
+        <div class="section-lbl">Día</div>
+        <div class="date-strip" id="dateStrip"></div>
+
+        <div class="section-lbl">Duración</div>
+        <div class="dur-pills" id="durPills">
+            <button class="dur-pill active" type="button" data-duration="1">1 hora</button>
+            <button class="dur-pill" type="button" data-duration="2">2 horas</button>
+            <button class="dur-pill" type="button" data-duration="3">3 horas</button>
+        </div>
+
+        <div class="section-lbl">Horarios disponibles</div>
+        <div class="legend-inline">
+            <span><span class="dot libre"></span> Libre</span>
+            <span><span class="dot ocup"></span> Ocupado</span>
+            <span><span class="dot parc"></span> No alcanzan {{ '' }}horas seguidas</span>
+        </div>
+        <div id="slotsContainer">
+            <div class="slot-list">
+                <div class="sk sk-slot"></div><div class="sk sk-slot"></div>
+                <div class="sk sk-slot"></div><div class="sk sk-slot"></div>
+            </div>
+        </div>
+
+        <div class="step-actions">
+            <button class="btn-back" type="button" id="btnBack2">Atrás</button>
+            <button class="btn-next" type="button" id="btnNext2" disabled>
+                Continuar
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
+    </section>
+</div>
+
+<!-- Bottom sheet de confirmación -->
+<div class="sheet-bg" id="sheetBg">
+    <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-body">
+            <h2>Confirma tu reserva</h2>
+            <p class="sub">Solo nombre y teléfono. Detalles extra son opcionales.</p>
+
+            <div class="ticket-summary">
+                <span class="ts-lab">Cancha</span>      <span class="ts-val" id="tsCancha">—</span>
+                <span class="ts-lab">Fecha</span>       <span class="ts-val" id="tsFecha">—</span>
+                <span class="ts-lab">Horario</span>     <span class="ts-val" id="tsHora">—</span>
+                <span class="ts-total-lab">Total</span> <span class="ts-total-val" id="tsTotal">$0</span>
+            </div>
+
+            <form id="bookingForm">
+                <div class="fg">
+                    <label for="fNombre">Nombre completo *</label>
+                    <input class="form-input" type="text" id="fNombre" required autocomplete="name">
+                </div>
+                <div class="fg">
+                    <label for="fTel">Teléfono *</label>
+                    <input class="form-input" type="tel" id="fTel" required autocomplete="tel" pattern="[0-9+\- ]{7,}">
+                </div>
+
+                <button type="button" class="more-toggle" id="moreToggle">
+                    Agregar más detalles
+                    <svg class="chev" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="more-fields" id="moreFields">
+                    <div class="fg">
+                        <label for="fEmail">Email</label>
+                        <input class="form-input" type="email" id="fEmail" autocomplete="email">
+                    </div>
+                    <div class="fg">
+                        <label for="fNota">Nota</label>
+                        <input class="form-input" type="text" id="fNota" placeholder="Ej: equipo de 8 jugadores">
+                    </div>
+                </div>
+
+                <div class="fg" style="margin-top: 14px;">
+                    <label>Método de pago</label>
+                    <div class="pay-grid" id="payOpts">
+                        <button type="button" class="pay-opt active" data-pay="efectivo">Efectivo</button>
+                        <button type="button" class="pay-opt" data-pay="nequi">Nequi</button>
+                        <button type="button" class="pay-opt" data-pay="transferencia">Transferencia</button>
+                        <button type="button" class="pay-opt" data-pay="pse">PSE</button>
+                    </div>
+                </div>
+
+                <div class="sheet-actions">
+                    <button type="button" class="btn-cancel" id="btnCancelSheet">Cancelar</button>
+                    <button type="submit" class="btn-confirm" id="btnConfirm">Confirmar reserva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom sheet del ticket post-éxito -->
+<div class="sheet-bg" id="ticketBg">
+    <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-body">
+            <div class="ticket-head">
+                <div class="ticket-icon">
+                    <svg width="28" height="28" fill="none" stroke="#16a34a" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <h2>¡Reserva confirmada!</h2>
+                <div class="code" id="tkCode">—</div>
+            </div>
+            <div class="ticket-rows">
+                <div class="ticket-row"><span class="tr-l">Cancha</span><span class="tr-v" id="tkCancha">—</span></div>
+                <div class="ticket-row"><span class="tr-l">Fecha</span><span class="tr-v" id="tkFecha">—</span></div>
+                <div class="ticket-row"><span class="tr-l">Horario</span><span class="tr-v" id="tkHora">—</span></div>
+                <div class="ticket-row"><span class="tr-l">Cliente</span><span class="tr-v" id="tkCliente">—</span></div>
+                <div class="ticket-row"><span class="tr-l">Pago</span><span class="tr-v" id="tkPago">—</span></div>
+            </div>
+            <div class="ticket-total"><span>Total</span><strong id="tkTotal">$0</strong></div>
+            <div class="sheet-actions">
+                <a class="btn-cancel" id="tkClose" style="cursor: pointer;">Cerrar</a>
+                <a class="btn-confirm" id="tkWhatsapp" style="text-decoration: none; text-align: center;" target="_blank" rel="noopener">Compartir por WhatsApp</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+{% if negocio.telefono %}
+<a href="https://wa.me/{{ negocio.telefono|cut:" "|cut:"-"|cut:"+" }}?text=Hola%2C%20quiero%20reservar%20una%20cancha%20en%20{{ negocio.nombre|urlencode }}" target="_blank" rel="noopener" class="wa-fab" aria-label="Reservar por WhatsApp">
+    <svg width="28" height="28" fill="white" viewBox="0 0 24 24"><path d="M17.5 14.4l-2.6-.75c-.34-.1-.7 0-.95.25l-1.18 1.2c-1.74-.94-3.16-2.35-4.09-4.09l1.2-1.18c.25-.25.35-.6.25-.95L9.4 6.3c-.13-.4-.5-.65-.92-.65H6.06c-.5 0-.92.42-.9.92.11 3.5 1.5 6.85 4 9.35 2.5 2.5 5.85 3.9 9.35 4 .5.03.92-.4.92-.9V16.6c0-.4-.27-.78-.93-.2zM12 2C6.48 2 2 6.48 2 12c0 1.78.47 3.45 1.28 4.9L2 22l5.25-1.27A9.96 9.96 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+</a>
+{% endif %}
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+    const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const negocioNombre = "{{ negocio.nombre|default:'Centro Deportivo'|escapejs }}";
+    const negocioTel = "{{ negocio.telefono|escapejs }}";
+
+    const state = {
+        step: 1,
+        canchaId: null, canchaNombre: null, canchaTipo: null, canchaPrecio: 0,
+        fecha: null, fechaLabel: 'Hoy',
+        duracion: 1,
+        slotElegido: null,
+        typeFilter: '',
+        canchas: [],
+        tipoPago: 'efectivo',
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n) => Math.round(n).toLocaleString('es-CO');
+    const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    function showToast(msg, type) {
+        const t = $('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + (type || '');
+        clearTimeout(t._tm);
+        t._tm = setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    function formatFechaLong(iso) {
+        const [y,m,d] = iso.split('-').map(Number);
+        return new Date(y, m-1, d).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+    function formatFechaShort(iso) {
+        const [y,m,d] = iso.split('-').map(Number);
+        const dt = new Date(y, m-1, d);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+        const dtMid = new Date(y, m-1, d); dtMid.setHours(0,0,0,0);
+        if (dtMid.getTime() === today.getTime()) return 'Hoy';
+        if (dtMid.getTime() === tomorrow.getTime()) return 'Mañana';
+        return dt.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' }).replace('.', '');
+    }
+    function todayIso() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    // ----- Stepper -----
+    function gotoStep(n) {
+        if (n < 1 || n > 3) return;
+        if (n === 2 && !state.canchaId) return;
+        if (n === 3) { openSheet(); return; }
+        state.step = n;
+        document.querySelectorAll('.step-panel').forEach(p => p.classList.toggle('show', +p.dataset.panel === n));
+        document.querySelectorAll('.step-bar .step').forEach(s => {
+            const sn = +s.dataset.step;
+            s.classList.toggle('active', sn === n);
+            s.classList.toggle('done', sn < n);
+        });
+        $('stepLabel').innerHTML = `Paso <strong>${n}</strong> de 3`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (n === 2) {
+            updateSummary();
+            if (!$('dateStrip').children.length) buildDateStrip();
+            loadSlots();
+        }
+    }
+
+    document.querySelectorAll('.step-bar .step').forEach(s => {
+        s.addEventListener('click', () => {
+            const sn = +s.dataset.step;
+            if (sn === 1) gotoStep(1);
+            else if (sn === 2 && state.canchaId) gotoStep(2);
+            else if (sn === 3 && state.slotElegido) gotoStep(3);
+        });
+    });
+    $('btnNext1').addEventListener('click', () => { if (state.canchaId) gotoStep(2); });
+    $('btnBack2').addEventListener('click', () => gotoStep(1));
+    $('btnNext2').addEventListener('click', () => { if (state.slotElegido) gotoStep(3); });
+    $('ssEdit').addEventListener('click', () => gotoStep(1));
+
+    // ----- Step 1: Canchas -----
+    async function loadCourts() {
+        try {
+            const url = `{% url "api_disponibilidad_dia" %}?fecha=${state.fecha || todayIso()}&duracion=1`;
+            const r = await fetch(url);
+            const data = await r.json();
+            state.canchas = data.canchas || [];
+            buildTypeFilter();
+            renderCourts();
+        } catch (e) {
+            $('courtList').innerHTML = '<div class="empty">No se pudo cargar las canchas.</div>';
+        }
+    }
+
+    function buildTypeFilter() {
+        const types = [...new Set(state.canchas.map(c => c.tipo))];
+        const cont = $('typeFilter');
+        cont.innerHTML = '<button type="button" class="type-chip active" data-type="">Todas</button>';
+        types.forEach(t => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'type-chip';
+            b.dataset.type = t;
+            b.textContent = t;
+            cont.appendChild(b);
+        });
+        cont.querySelectorAll('.type-chip').forEach(b => {
+            b.addEventListener('click', () => {
+                cont.querySelectorAll('.type-chip').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                state.typeFilter = b.dataset.type;
+                renderCourts();
+            });
+        });
+    }
+
+    function renderCourts() {
+        const cont = $('courtList');
+        const canchas = state.typeFilter ? state.canchas.filter(c => c.tipo === state.typeFilter) : state.canchas;
+        $('courtCountMeta').textContent = `${canchas.length} disponible${canchas.length === 1 ? '' : 's'}`;
+        if (!canchas.length) {
+            cont.innerHTML = '<div class="empty">No hay canchas con este filtro.</div>';
+            $('btnNext1').disabled = true;
+            return;
+        }
+        cont.innerHTML = '';
+        canchas.forEach(c => {
+            const libres = c.slots.filter(s => s.estado === 'disponible').length;
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'court-card' + (c.id === state.canchaId ? ' selected' : '');
+            card.dataset.id = c.id;
+            const imgHtml = c.imagen
+                ? `<div class="cc-img" style="background-image: url('${escapeHtml(c.imagen)}');"></div>`
+                : `<div class="cc-img empty"><svg width="36" height="36" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2"/></svg></div>`;
+            card.innerHTML = `
+                ${imgHtml}
+                <div class="cc-info">
+                    <div>
+                        <p class="cc-name">${escapeHtml(c.nombre)}</p>
+                        <p class="cc-type">${escapeHtml(c.tipo)} · ${c.capacidad} jug · ${escapeHtml(c.superficie)}</p>
+                    </div>
+                    <div class="cc-bottom">
+                        <span class="cc-price">$${fmt(c.precio_hora)} <small>/h</small></span>
+                        <span class="cc-libres"><strong>${libres}</strong> libres hoy</span>
+                    </div>
+                </div>
+            `;
+            card.addEventListener('click', () => {
+                cont.querySelectorAll('.court-card').forEach(x => x.classList.remove('selected'));
+                card.classList.add('selected');
+                state.canchaId = c.id;
+                state.canchaNombre = c.nombre;
+                state.canchaTipo = c.tipo;
+                state.canchaPrecio = c.precio_hora;
+                $('btnNext1').disabled = false;
+            });
+            cont.appendChild(card);
+        });
+        $('btnNext1').disabled = !state.canchaId;
+    }
+
+    // ----- Step 2: Día + Hora -----
+    function updateSummary() {
+        const c = state.canchas.find(x => x.id === state.canchaId);
+        if (!c) return;
+        $('ssName').textContent = c.nombre;
+        $('ssMeta').textContent = `${c.tipo} · ${c.capacidad} jug · $${fmt(c.precio_hora)}/h`;
+    }
+
+    function buildDateStrip() {
+        const strip = $('dateStrip');
+        strip.innerHTML = '';
+        const today = new Date(); today.setHours(0,0,0,0);
+        const dows = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+        const mons = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+        for (let i = 0; i < 14; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'date-chip' + (i === 0 ? ' today' : '');
+            if (state.fecha === iso) chip.classList.add('selected');
+            chip.dataset.iso = iso;
+            chip.innerHTML = `<span class="dow">${dows[d.getDay()]}</span><span class="day">${d.getDate()}</span><span class="mon">${mons[d.getMonth()]}</span>`;
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('selected'));
+                chip.classList.add('selected');
+                state.fecha = iso;
+                state.fechaLabel = formatFechaShort(iso);
+                state.slotElegido = null;
+                $('btnNext2').disabled = true;
+                loadSlots();
+            });
+            strip.appendChild(chip);
+        }
+        if (!state.fecha) {
+            state.fecha = todayIso();
+            strip.firstChild.classList.add('selected');
+        } else {
+            // si fecha ya estaba seteada (ej. reserva rápida), marca la correcta
+            strip.querySelectorAll('.date-chip').forEach(c => c.classList.toggle('selected', c.dataset.iso === state.fecha));
+        }
+    }
+
+    $('durPills').addEventListener('click', (e) => {
+        const btn = e.target.closest('.dur-pill');
+        if (!btn) return;
+        document.querySelectorAll('.dur-pill').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        state.duracion = parseInt(btn.dataset.duration, 10);
+        state.slotElegido = null;
+        $('btnNext2').disabled = true;
+        loadSlots();
+    });
+
+    async function loadSlots() {
+        const cont = $('slotsContainer');
+        cont.innerHTML = '<div class="slot-list">' + '<div class="sk sk-slot"></div>'.repeat(6) + '</div>';
+        try {
+            const url = `{% url "api_disponibilidad_dia" %}?fecha=${state.fecha}&duracion=${state.duracion}`;
+            const r = await fetch(url);
+            const data = await r.json();
+            state.canchas = data.canchas || state.canchas;
+            renderSlots();
+        } catch (err) {
+            cont.innerHTML = '<div class="empty">No se pudo cargar la disponibilidad.</div>';
+        }
+    }
+
+    function renderSlots() {
+        const cancha = state.canchas.find(c => c.id === state.canchaId);
+        const cont = $('slotsContainer');
+        if (!cancha) { cont.innerHTML = '<div class="empty">Cancha no encontrada.</div>'; return; }
+        const visibles = cancha.slots.filter(s => s.estado !== 'pasado');
+        if (!visibles.length) { cont.innerHTML = '<div class="empty">No hay horarios para esta fecha. Prueba otra.</div>'; $('btnNext2').disabled = true; return; }
+
+        const groups = { 'Mañana (8 a 12)': [], 'Tarde (12 a 18)': [], 'Noche (18 en adelante)': [] };
+        visibles.forEach(s => {
+            if (s.hora < 12) groups['Mañana (8 a 12)'].push(s);
+            else if (s.hora < 18) groups['Tarde (12 a 18)'].push(s);
+            else groups['Noche (18 en adelante)'].push(s);
+        });
+
+        cont.innerHTML = '';
+        for (const [label, slots] of Object.entries(groups)) {
+            if (!slots.length) continue;
+            const section = document.createElement('section');
+            section.className = 'slot-section';
+            section.innerHTML = `<div class="ss-h">${label}</div>`;
+            const grid = document.createElement('div');
+            grid.className = 'slot-list';
+            slots.forEach(s => {
+                const el = document.createElement('button');
+                el.type = 'button';
+                el.className = `slot ${s.estado}` + (state.slotElegido && state.slotElegido.hora === s.hora ? ' selected' : '');
+                el.disabled = s.estado !== 'disponible';
+                const label = {
+                    disponible: 'Libre',
+                    ocupado: 'Ocupado',
+                    parcial: 'No alcanzan ' + state.duracion + 'h',
+                    pasado: '',
+                }[s.estado];
+                el.innerHTML = `<span class="hora">${s.hora_label} – ${s.hora_fin_label}</span><span class="precio">$${fmt(s.precio)}</span><span class="label">${label}</span>`;
+                if (s.estado === 'disponible') {
+                    el.addEventListener('click', () => selectSlot(s, el));
+                }
+                grid.appendChild(el);
+            });
+            section.appendChild(grid);
+            cont.appendChild(section);
+        }
+    }
+
+    function selectSlot(slot, el) {
+        state.slotElegido = slot;
+        document.querySelectorAll('.slot').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        $('btnNext2').disabled = false;
+        setTimeout(() => $('btnNext2').scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+
+    // ----- Sheet (Step 3) -----
+    function openSheet() {
+        if (!state.slotElegido) return;
+        const s = state.slotElegido;
+        $('tsCancha').textContent = state.canchaNombre;
+        $('tsFecha').textContent = formatFechaLong(state.fecha);
+        $('tsHora').textContent = `${s.hora_label} – ${s.hora_fin_label}`;
+        $('tsTotal').textContent = '$' + fmt(s.precio);
+
+        try {
+            const stored = JSON.parse(localStorage.getItem('kamcha_user') || '{}');
+            if (stored.nombre) $('fNombre').value = stored.nombre;
+            if (stored.telefono) $('fTel').value = stored.telefono;
+            if (stored.email) $('fEmail').value = stored.email;
+        } catch (e) {}
+
+        // Marca step 3 en el stepper
+        document.querySelectorAll('.step-bar .step').forEach(s => {
+            const sn = +s.dataset.step;
+            s.classList.toggle('active', sn === 3);
+            s.classList.toggle('done', sn < 3);
+        });
+        $('stepLabel').innerHTML = `Paso <strong>3</strong> de 3`;
+
+        $('sheetBg').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeSheet() {
+        $('sheetBg').classList.remove('open');
+        document.body.style.overflow = '';
+        // Volver al step 2 visualmente
+        document.querySelectorAll('.step-bar .step').forEach(s => {
+            const sn = +s.dataset.step;
+            s.classList.toggle('active', sn === 2);
+            s.classList.toggle('done', sn < 2);
+        });
+        $('stepLabel').innerHTML = `Paso <strong>2</strong> de 3`;
+    }
+    $('btnCancelSheet').addEventListener('click', closeSheet);
+    $('sheetBg').addEventListener('click', (e) => { if (e.target === $('sheetBg')) closeSheet(); });
+
+    $('moreToggle').addEventListener('click', () => {
+        $('moreToggle').classList.toggle('open');
+        $('moreFields').classList.toggle('open');
+    });
+
+    $('payOpts').addEventListener('click', (e) => {
+        const btn = e.target.closest('.pay-opt');
+        if (!btn) return;
+        document.querySelectorAll('.pay-opt').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        state.tipoPago = btn.dataset.pay;
+    });
+
+    $('bookingForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!state.slotElegido) return;
+        const btn = $('btnConfirm');
+        btn.disabled = true; btn.textContent = 'Enviando…';
+
+        const nombre = $('fNombre').value.trim();
+        const telefono = $('fTel').value.trim();
+        const email = $('fEmail').value.trim();
+        const nota = $('fNota').value.trim();
+
+        try {
+            const body = {
+                cancha_id: state.canchaId,
+                fecha: state.fecha,
+                hora: state.slotElegido.hora,
+                duracion: state.duracion,
+                nombre, telefono, email, nota,
+                tipo_pago: state.tipoPago,
+            };
+            const r = await fetch('{% url "api_booking_create" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                body: JSON.stringify(body),
+            });
+            const data = await r.json();
+            if (!r.ok || !data.ok) {
+                showToast(data.error || 'No se pudo crear la reserva', 'error');
+                btn.disabled = false; btn.textContent = 'Confirmar reserva';
+                return;
+            }
+
+            try {
+                localStorage.setItem('kamcha_user', JSON.stringify({ nombre, telefono, email }));
+                const arr = JSON.parse(localStorage.getItem('kamcha_reservas') || '[]');
+                arr.unshift({ id: data.reserva.id, ...data.reserva, telefono });
+                localStorage.setItem('kamcha_reservas', JSON.stringify(arr.slice(0, 30)));
+            } catch (e) {}
+
+            $('sheetBg').classList.remove('open');
+            showTicket(data.reserva, nombre, telefono);
+            $('bookingForm').reset();
+            btn.disabled = false; btn.textContent = 'Confirmar reserva';
+            state.slotElegido = null;
+        } catch (err) {
+            showToast('Error de conexión', 'error');
+            btn.disabled = false; btn.textContent = 'Confirmar reserva';
+        }
+    });
+
+    // ----- Ticket -----
+    function showTicket(r, nombre, telefono) {
+        $('tkCode').textContent = `Código: #${r.id}`;
+        $('tkCancha').textContent = r.cancha;
+        $('tkFecha').textContent = formatFechaLong(r.fecha);
+        $('tkHora').textContent = `${r.hora_inicio} – ${r.hora_fin}`;
+        $('tkCliente').textContent = nombre;
+        $('tkPago').textContent = r.tipo_pago.charAt(0).toUpperCase() + r.tipo_pago.slice(1);
+        $('tkTotal').textContent = '$' + fmt(r.total);
+
+        const msg = `Hola! Reservé en ${negocioNombre}:\n` +
+                    `• Cancha: ${r.cancha}\n` +
+                    `• Fecha: ${formatFechaLong(r.fecha)}\n` +
+                    `• Horario: ${r.hora_inicio} – ${r.hora_fin}\n` +
+                    `• Total: $${fmt(r.total)}\n` +
+                    `• Código: #${r.id}`;
+        const wapp = negocioTel ? `https://wa.me/${negocioTel.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`
+                                : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        $('tkWhatsapp').href = wapp;
+        $('ticketBg').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    $('tkClose').addEventListener('click', () => {
+        $('ticketBg').classList.remove('open');
+        document.body.style.overflow = '';
+        gotoStep(1);
+        loadCourts();
+        renderQuickCard();
+    });
+    $('ticketBg').addEventListener('click', (e) => { if (e.target === $('ticketBg')) $('tkClose').click(); });
+
+    // ----- Reserva rápida -----
+    function renderQuickCard() {
+        let arr = [];
+        try { arr = JSON.parse(localStorage.getItem('kamcha_reservas') || '[]'); } catch (e) {}
+        if (!arr.length) return;
+        const last = arr[0];
+        // Calcular próxima fecha con el mismo día de la semana
+        const [ly, lm, ld] = last.fecha.split('-').map(Number);
+        const lastDate = new Date(ly, lm-1, ld);
+        const lastDow = lastDate.getDay();
+        const today = new Date(); today.setHours(0,0,0,0);
+        let daysToAdd = (lastDow - today.getDay() + 7) % 7;
+        if (daysToAdd === 0) daysToAdd = 7;
+        const target = new Date(today);
+        target.setDate(today.getDate() + daysToAdd);
+        const targetIso = `${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`;
+        const dows = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+        $('quickText').textContent = `${last.cancha} · ${dows[lastDow]} ${last.hora_inicio}`;
+        $('quickCard').classList.add('show');
+
+        $('quickBtn').onclick = async () => {
+            // Cargar canchas si no están y disparar el flujo prefilled
+            if (!state.canchas.length) await loadCourts();
+            const c = state.canchas.find(x => x.id === last.id || x.nombre === last.cancha);
+            if (!c) { showToast('La cancha ya no existe', 'error'); return; }
+            state.canchaId = c.id;
+            state.canchaNombre = c.nombre;
+            state.canchaTipo = c.tipo;
+            state.canchaPrecio = c.precio_hora;
+            state.fecha = targetIso;
+            state.duracion = last.duracion;
+            // Activar la pill correcta
+            document.querySelectorAll('.dur-pill').forEach(p => p.classList.toggle('active', +p.dataset.duration === state.duracion));
+            gotoStep(2);
+        };
+    }
+
+    // ----- Init -----
+    loadCourts();
+    renderQuickCard();
+
+    // Auto-refresh slots cada 45s si estoy en step 2 sin sheet abierto
+    setInterval(() => {
+        if (state.step === 2 && !$('sheetBg').classList.contains('open') && !$('ticketBg').classList.contains('open')) {
+            loadSlots();
+        }
+    }, 45000);
+})();
+</script>
+{% endblock %}

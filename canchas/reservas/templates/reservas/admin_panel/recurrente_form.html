@@ -1,0 +1,123 @@
+{% extends 'reservas/base_admin.html' %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; margin: 0 auto;">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+        <a href="{% url 'admin_recurrentes' %}" class="btn-ghost" style="padding: 6px 12px;">← Volver</a>
+        <h2 style="margin: 0; font-size: 18px;">{{ titulo }}</h2>
+    </div>
+
+    <form method="post" class="card card-padded" style="display: grid; gap: 14px;">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="flash flash-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Cancha *</label>
+                {{ form.cancha }}
+                {% if form.cancha.errors %}<small style="color: var(--c-danger);">{{ form.cancha.errors|join:" " }}</small>{% endif %}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Día de la semana *</label>
+                {{ form.dia_semana }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Hora de inicio *</label>
+                {{ form.hora_inicio }}
+                {% if form.hora_inicio.help_text %}<small style="color: var(--c-text-muted); font-size: 11px;">{{ form.hora_inicio.help_text }}</small>{% endif %}
+                {% if form.hora_inicio.errors %}<small style="color: var(--c-danger); font-size: 11px;">{{ form.hora_inicio.errors.0 }}</small>{% endif %}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Duración *</label>
+                {{ form.duracion }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Vigente desde *</label>
+                {{ form.fecha_desde }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Vigente hasta *</label>
+                {{ form.fecha_hasta }}
+            </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--c-border); margin: 6px 0;">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Cliente *</label>
+                {{ form.cliente_nombre }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Teléfono</label>
+                {{ form.cliente_telefono }}
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Email</label>
+                {{ form.cliente_email }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Precio acordado</label>
+                {{ form.precio_acordado }}
+                <small style="color: var(--c-text-muted); font-size: 11px;">Vacío = precio normal de la cancha</small>
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Estado</label>
+                {{ form.estado }}
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 6px;">Nota</label>
+                {{ form.nota }}
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <a href="{% url 'admin_recurrentes' %}" class="btn-ghost">Cancelar</a>
+            <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+    </form>
+
+    {% if recurrente %}
+    <div class="card card-padded" style="margin-top: 14px;">
+        <h3 style="margin: 0 0 4px; font-size: 15px;">Excepciones</h3>
+        <p style="font-size: 12px; color: var(--c-text-muted); margin: 0 0 14px;">Fechas en las que esta recurrente NO aplica (ej: feriado, cancelación puntual).</p>
+
+        <form method="post" action="{% url 'admin_recurrente_excepcion' recurrente.pk %}" style="display: flex; gap: 8px; align-items: end; margin-bottom: 12px;">
+            {% csrf_token %}
+            <div style="flex: 1;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 4px;">Fecha (debe ser {{ recurrente.get_dia_semana_display }})</label>
+                <input type="date" name="fecha" required class="form-input">
+            </div>
+            <div style="flex: 2;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--c-text); display: block; margin-bottom: 4px;">Motivo (opcional)</label>
+                <input type="text" name="motivo" class="form-input" placeholder="Ej: Festivo">
+            </div>
+            <button type="submit" class="btn-ghost">Agregar</button>
+        </form>
+
+        {% if excepciones %}
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            {% for e in excepciones %}
+            <div style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:#fef3c7; border:1px solid #fcd34d; border-radius:8px; font-size:12px;">
+                <strong>{{ e.fecha|date:"d M Y" }}</strong>{% if e.motivo %} · {{ e.motivo }}{% endif %}
+                <a href="{% url 'admin_recurrente_excepcion_quitar' recurrente.pk e.pk %}" style="color: var(--c-danger); text-decoration: none; font-weight: bold;">✕</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: var(--c-text-muted); font-size: 13px; margin: 0;">Sin excepciones.</p>
+        {% endif %}
+    </div>
+
+    <form method="post" action="{% url 'admin_recurrente_eliminar' recurrente.pk %}" style="margin-top: 14px;" onsubmit="return confirm('¿Eliminar esta reserva recurrente? Esta acción no se puede deshacer.');">
+        {% csrf_token %}
+        <button type="submit" class="btn-danger">Eliminar recurrente</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

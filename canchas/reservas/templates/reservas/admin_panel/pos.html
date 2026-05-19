@@ -1,0 +1,292 @@
+{% extends 'reservas/base_admin.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block page_title %}POS · Caja{% endblock %}
+
+{% block extra_head %}
+<style>
+    .pos-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 980px) { .pos-grid { grid-template-columns: 1fr 380px; } }
+
+    .pos-cat-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .pos-cat-tab { padding: 6px 12px; border-radius: 999px; background: white; border: 1px solid var(--c-border); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--c-text); }
+    .pos-cat-tab.active { background: var(--c-text); color: white; border-color: var(--c-text); }
+
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+    .product-btn {
+        padding: 8px; background: white; border: 1px solid var(--c-border); border-radius: 12px;
+        cursor: pointer; text-align: left; transition: all .15s; font-family: inherit;
+        display: flex; flex-direction: column; gap: 6px;
+    }
+    .product-btn:hover { border-color: var(--c-accent); background: var(--c-accent-soft); }
+    .product-btn:active { transform: scale(.97); }
+    .product-btn .pimg {
+        width: 100%; aspect-ratio: 1 / 1; background: #f8fafc; border-radius: 8px;
+        background-size: cover; background-position: center;
+    }
+    .product-btn .pn { font-size: 12px; font-weight: 700; color: var(--c-text); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 30px; }
+    .product-btn .pp { font-size: 13px; font-weight: 700; color: var(--c-accent); }
+    .product-btn.disabled { opacity: .5; cursor: not-allowed; }
+
+    .cart { background: white; border: 1px solid var(--c-border); border-radius: 14px; padding: 16px; position: sticky; top: 78px; max-height: calc(100vh - 100px); display: flex; flex-direction: column; }
+    .cart-items { flex: 1; overflow-y: auto; margin: 12px 0; }
+    .cart-empty { text-align: center; padding: 24px 0; color: var(--c-text-muted); font-size: 13px; }
+    .cart-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--c-border); }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item .ci-info { flex: 1; min-width: 0; }
+    .cart-item .ci-name { font-size: 13px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cart-item .ci-price { font-size: 11px; color: var(--c-text-muted); }
+    .cart-item .ci-qty { display: flex; align-items: center; gap: 4px; }
+    .cart-item .ci-qty button { width: 24px; height: 24px; border: 1px solid var(--c-border); background: white; border-radius: 6px; cursor: pointer; font-weight: 700; }
+    .cart-item .ci-qty input { width: 36px; text-align: center; border: 1px solid var(--c-border); border-radius: 6px; padding: 3px; font-size: 13px; }
+    .cart-item .ci-sub { font-size: 13px; font-weight: 700; min-width: 60px; text-align: right; }
+    .cart-item .ci-rm { background: none; border: none; cursor: pointer; color: var(--c-danger); font-size: 16px; }
+    .cart-total { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid var(--c-border); }
+    .cart-total .tl { font-size: 13px; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .cart-total .tv { font-size: 26px; font-weight: 700; color: var(--c-text); }
+
+    .pay-method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+    .pay-method { padding: 8px; border: 1px solid var(--c-border); border-radius: 8px; cursor: pointer; background: white; text-align: center; font-size: 12px; font-weight: 600; color: var(--c-text); }
+    .pay-method.active { background: var(--c-accent-soft); border-color: var(--c-accent); color: var(--c-accent); }
+    .reserva-select { width: 100%; padding: 9px 12px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 13px; background: white; margin-bottom: 8px; }
+
+    .manual-form { display: flex; gap: 6px; margin-bottom: 12px; }
+    .manual-form input { padding: 8px 10px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 13px; }
+
+    .toast-pos { position: fixed; bottom: 30px; right: 30px; background: var(--c-text); color: white; padding: 12px 18px; border-radius: 10px; font-size: 14px; opacity: 0; transition: all .2s; pointer-events: none; transform: translateY(20px); z-index: 100; }
+    .toast-pos.show { opacity: 1; transform: translateY(0); }
+    .toast-pos.success { background: var(--c-accent); }
+    .toast-pos.error { background: var(--c-danger); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-grid">
+    <div>
+        <div class="pos-cat-tabs" id="catTabs">
+            <button class="pos-cat-tab active" data-cat="">Todos</button>
+            <button class="pos-cat-tab" data-cat="bebida">Bebidas</button>
+            <button class="pos-cat-tab" data-cat="snack">Snacks</button>
+            <button class="pos-cat-tab" data-cat="alquiler">Alquileres</button>
+            <button class="pos-cat-tab" data-cat="servicio">Servicios</button>
+            <button class="pos-cat-tab" data-cat="otro">Otro</button>
+        </div>
+
+        <div class="manual-form">
+            <input type="text" id="manualName" placeholder="Producto manual" style="flex:2;">
+            <input type="number" id="manualPrice" placeholder="$" min="0" step="100" style="flex:1;">
+            <button class="btn-ghost" onclick="addManual()">+ Agregar</button>
+        </div>
+
+        <div class="product-grid" id="productGrid">
+            {% for p in productos %}
+            <button class="product-btn" type="button" data-cat="{{ p.categoria }}" data-id="{{ p.pk }}" data-name="{{ p.nombre|escapejs }}" data-price="{{ p.precio }}">
+                <div class="pimg" style="background-image: url('{% if p.imagen %}{{ p.imagen.url }}{% else %}{% static 'img/logo.webp' %}{% endif %}');"></div>
+                <div class="pn">{{ p.nombre }}</div>
+                <div class="pp">${{ p.precio|floatformat:0|intcomma }}</div>
+            </button>
+            {% empty %}
+            <p style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--c-text-muted);">
+                Aún no hay productos. <a href="{% url 'admin_producto_crear' %}" style="color: var(--c-accent); font-weight: 600;">Crear el primero →</a>
+            </p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <aside class="cart">
+        <h3 style="margin: 0 0 4px; font-size: 15px; font-weight: 700;">Venta actual</h3>
+        <p style="margin: 0; color: var(--c-text-muted); font-size: 12px;">Toca productos para agregarlos</p>
+
+        <div class="cart-items" id="cartItems">
+            <div class="cart-empty">Carrito vacío</div>
+        </div>
+
+        <div class="cart-total">
+            <span class="tl">Total</span>
+            <span class="tv" id="cartTotal">$0</span>
+        </div>
+
+        <div>
+            <label style="font-size: 11px; font-weight: 600; color: var(--c-text-muted); display: block; margin: 8px 0 4px; text-transform: uppercase; letter-spacing: 0.04em;">Método de pago</label>
+            <div class="pay-method-grid" id="payMethods">
+                {% for v, l in metodos_pago %}
+                <button class="pay-method {% if forloop.first %}active{% endif %}" data-method="{{ v }}">{{ l }}</button>
+                {% endfor %}
+            </div>
+
+            <label style="font-size: 11px; font-weight: 600; color: var(--c-text-muted); display: block; margin: 8px 0 4px; text-transform: uppercase; letter-spacing: 0.04em;">Asociar a reserva (opcional)</label>
+            <select id="reservaSel" class="reserva-select">
+                <option value="">— Sin reserva —</option>
+            </select>
+
+            <button class="btn-primary" id="btnCobrar" style="width: 100%; padding: 12px; font-size: 14px;" disabled>Cobrar</button>
+        </div>
+    </aside>
+</div>
+
+<div class="toast-pos" id="toast"></div>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+    const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const cart = [];
+    let method = 'efectivo';
+
+    function $(id) { return document.getElementById(id); }
+    function fmt(n) { return Math.round(n).toLocaleString('es-CO'); }
+
+    function showToast(msg, type) {
+        const t = $('toast');
+        t.textContent = msg;
+        t.className = 'toast-pos show ' + (type || '');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function renderCart() {
+        const cont = $('cartItems');
+        if (cart.length === 0) {
+            cont.innerHTML = '<div class="cart-empty">Carrito vacío</div>';
+            $('cartTotal').textContent = '$0';
+            $('btnCobrar').disabled = true;
+            return;
+        }
+        let total = 0;
+        cont.innerHTML = '';
+        cart.forEach((it, idx) => {
+            total += it.precio * it.cantidad;
+            const el = document.createElement('div');
+            el.className = 'cart-item';
+            el.innerHTML = `
+                <div class="ci-info">
+                    <div class="ci-name">${escapeHtml(it.nombre)}</div>
+                    <div class="ci-price">$${fmt(it.precio)} c/u</div>
+                </div>
+                <div class="ci-qty">
+                    <button onclick="window.posDec(${idx})">−</button>
+                    <input type="number" value="${it.cantidad}" min="1" onchange="window.posQty(${idx}, this.value)">
+                    <button onclick="window.posInc(${idx})">+</button>
+                </div>
+                <div class="ci-sub">$${fmt(it.precio * it.cantidad)}</div>
+                <button class="ci-rm" onclick="window.posRm(${idx})" title="Quitar">×</button>
+            `;
+            cont.appendChild(el);
+        });
+        $('cartTotal').textContent = '$' + fmt(total);
+        $('btnCobrar').disabled = false;
+    }
+
+    function addItem(p) {
+        const existing = cart.find(x => x.producto_id === p.producto_id && x.nombre === p.nombre);
+        if (existing) {
+            existing.cantidad++;
+        } else {
+            cart.push({ ...p, cantidad: 1 });
+        }
+        renderCart();
+    }
+
+    window.posInc = (idx) => { cart[idx].cantidad++; renderCart(); };
+    window.posDec = (idx) => { if (cart[idx].cantidad > 1) { cart[idx].cantidad--; renderCart(); } };
+    window.posQty = (idx, v) => { cart[idx].cantidad = Math.max(1, parseInt(v) || 1); renderCart(); };
+    window.posRm = (idx) => { cart.splice(idx, 1); renderCart(); };
+
+    document.querySelectorAll('.product-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            addItem({
+                producto_id: parseInt(btn.dataset.id, 10),
+                nombre: btn.dataset.name,
+                precio: parseFloat(btn.dataset.price),
+            });
+        });
+    });
+
+    window.addManual = () => {
+        const name = $('manualName').value.trim();
+        const price = parseFloat($('manualPrice').value);
+        if (!name || !price || price <= 0) {
+            showToast('Nombre y precio son requeridos', 'error');
+            return;
+        }
+        addItem({ producto_id: null, nombre: name, precio: price });
+        $('manualName').value = '';
+        $('manualPrice').value = '';
+    };
+
+    $('catTabs').addEventListener('click', (e) => {
+        const btn = e.target.closest('.pos-cat-tab');
+        if (!btn) return;
+        document.querySelectorAll('.pos-cat-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cat = btn.dataset.cat;
+        document.querySelectorAll('.product-btn').forEach(p => {
+            p.style.display = (!cat || p.dataset.cat === cat) ? '' : 'none';
+        });
+    });
+
+    $('payMethods').addEventListener('click', (e) => {
+        const btn = e.target.closest('.pay-method');
+        if (!btn) return;
+        document.querySelectorAll('.pay-method').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        method = btn.dataset.method;
+    });
+
+    // Cargar reservas de hoy para asociar
+    fetch(`/api/reservas/${new Date().toISOString().slice(0, 10)}/`)
+        .then(r => r.json())
+        .then(data => {
+            const sel = $('reservaSel');
+            (data.reservas || []).forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = `#${r.id} · ${r.cancha} · ${r.hora_inicio} · ${r.cliente}`;
+                sel.appendChild(opt);
+            });
+        });
+
+    $('btnCobrar').addEventListener('click', async () => {
+        if (cart.length === 0) return;
+        const btn = $('btnCobrar');
+        btn.disabled = true; btn.textContent = 'Procesando…';
+        try {
+            const r = await fetch('{% url "admin_pos_registrar" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                body: JSON.stringify({
+                    items: cart.map(c => ({
+                        producto_id: c.producto_id,
+                        nombre: c.nombre,
+                        precio: c.precio,
+                        cantidad: c.cantidad,
+                    })),
+                    metodo_pago: method,
+                    reserva_id: $('reservaSel').value || null,
+                }),
+            });
+            const data = await r.json();
+            if (!r.ok || !data.ok) {
+                showToast(data.error || 'Error al cobrar', 'error');
+            } else {
+                showToast('Venta registrada · $' + fmt(data.venta.total), 'success');
+                cart.length = 0;
+                renderCart();
+                $('reservaSel').value = '';
+            }
+        } catch (err) {
+            showToast('Error de conexión', 'error');
+        }
+        btn.disabled = false; btn.textContent = 'Cobrar';
+    });
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+})();
+</script>
+{% endblock %}

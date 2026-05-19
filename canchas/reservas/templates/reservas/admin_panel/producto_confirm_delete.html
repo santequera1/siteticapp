@@ -1,0 +1,15 @@
+{% extends 'reservas/base_admin.html' %}
+{% block page_title %}Eliminar producto{% endblock %}
+{% block content %}
+<div style="max-width: 480px; margin: 0 auto;">
+    <div class="card card-padded">
+        <h2 style="margin: 0 0 8px;">¿Eliminar {{ producto.nombre }}?</h2>
+        <p style="color: var(--c-text-muted);">Esta acción no se puede deshacer. Las ventas históricas no se ven afectadas (guardan snapshot del nombre).</p>
+        <form method="post" style="display: flex; gap: 8px; margin-top: 16px;">
+            {% csrf_token %}
+            <a href="{% url 'admin_productos' %}" class="btn-ghost">Cancelar</a>
+            <button type="submit" class="btn-danger">Eliminar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

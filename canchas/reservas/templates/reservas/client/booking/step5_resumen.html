@@ -1,0 +1,71 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Reservar - Tus Datos{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-8">
+    <!-- Progress -->
+    <div class="flex items-center justify-center gap-2 mb-8">
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">1</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">2</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">3</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">4</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">5</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">6</div>
+    </div>
+
+    <div class="card p-6">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="{% url 'booking_step4' %}" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <h1 class="text-xl font-bold text-gray-800">Resumen y tus datos</h1>
+        </div>
+
+        <!-- Resumen -->
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <h3 class="font-bold text-green-800 mb-2">Tu reserva</h3>
+            <div class="space-y-1 text-sm text-green-700">
+                <p><strong>Cancha:</strong> {{ cancha.nombre }}</p>
+                <p><strong>Fecha:</strong> {{ fecha|date:"l d M Y" }}</p>
+                <p><strong>Horario:</strong> {{ hora_inicio }} - {{ hora_fin }}</p>
+                <p><strong>Duracion:</strong> {{ duracion }} hora{{ duracion|pluralize:"s" }}</p>
+                <p class="text-lg font-bold mt-2"><strong>Total:</strong> ${{ total|floatformat:0 }}</p>
+            </div>
+        </div>
+
+        <!-- Formulario datos -->
+        <form method="post">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
+                    <input type="text" name="nombre" class="form-input" required placeholder="Tu nombre">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Telefono *</label>
+                    <input type="tel" name="telefono" class="form-input" required placeholder="300 123 4567">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email (opcional)</label>
+                    <input type="email" name="email" class="form-input" placeholder="tu@email.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nota adicional (opcional)</label>
+                    <textarea name="nota" class="form-input" rows="2" placeholder="Alguna nota o solicitud especial"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-8 flex gap-4">
+                <a href="{% url 'booking_step4' %}" class="btn-secondary flex-1 text-center">Atras</a>
+                <button type="submit" class="btn-primary flex-1">Continuar al pago</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

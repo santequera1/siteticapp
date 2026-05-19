@@ -1,0 +1,73 @@
+{% extends 'reservas/base_admin.html' %}
+{% load static %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 0 auto;">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+        <a href="{% url 'admin_productos' %}" class="btn-ghost" style="padding: 6px 12px;">← Volver</a>
+        <h2 style="margin: 0; font-size: 18px;">{{ titulo }}</h2>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="card card-padded" style="display: grid; gap: 14px;">
+        {% csrf_token %}
+
+        <div>
+            <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Nombre *</label>
+            {{ form.nombre }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Categoría</label>
+                {{ form.categoria }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Precio</label>
+                {{ form.precio }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Stock</label>
+                {{ form.stock }}
+                <small style="color: var(--c-text-muted); font-size: 11px;">Vacío = no controla inventario</small>
+            </div>
+            <div style="display: flex; align-items: end; gap: 6px;">
+                <label style="font-size: 13px; display: flex; align-items: center; gap: 6px;">{{ form.is_active }} Activo</label>
+            </div>
+        </div>
+
+        <div>
+            <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Imagen</label>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img id="prodPreview" src="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{% static 'img/logo.webp' %}{% endif %}" alt="" style="width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 1px solid var(--c-border); background: white;">
+                <div style="flex: 1;">
+                    {{ form.imagen }}
+                    <small style="color: var(--c-text-muted); font-size: 11px; display: block; margin-top: 4px;">Si no subes nada, se usa el logo de la app como ícono.</small>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center;">
+            {% if producto %}
+            <a href="{% url 'admin_producto_eliminar' producto.pk %}" class="btn-danger" style="padding: 7px 12px; font-size: 12px;">Eliminar</a>
+            {% else %}<span></span>{% endif %}
+            <div style="display: flex; gap: 8px;">
+                <a href="{% url 'admin_productos' %}" class="btn-ghost">Cancelar</a>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Preview de imagen al seleccionar
+    document.getElementById('id_imagen')?.addEventListener('change', function(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) { document.getElementById('prodPreview').src = ev.target.result; };
+        reader.readAsDataURL(file);
+    });
+</script>
+{% endblock %}

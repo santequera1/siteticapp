@@ -1,0 +1,117 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Reservar - Metodo de Pago{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-8">
+    <!-- Progress -->
+    <div class="flex items-center justify-center gap-2 mb-8">
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">1</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">2</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">3</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">4</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">5</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">6</div>
+    </div>
+
+    <div class="card p-6">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="{% url 'booking_step5' %}" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <h1 class="text-xl font-bold text-gray-800">Metodo de pago</h1>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Monto -->
+            <div class="mb-6">
+                <h3 class="font-medium text-gray-700 mb-3">Tipo de pago</h3>
+                <div class="space-y-2">
+                    <label class="flex items-center justify-between p-4 rounded-lg border-2 border-transparent hover:border-green-500 cursor-pointer bg-gray-50 pago-tipo-option">
+                        <input type="radio" name="estado_pago" value="pendiente" class="hidden" checked>
+                        <div>
+                            <p class="font-semibold text-gray-800">Pago total</p>
+                            <p class="text-sm text-gray-500">Paga el valor completo</p>
+                        </div>
+                        <span class="font-bold text-green-600 text-lg">${{ total|floatformat:0 }}</span>
+                    </label>
+                    <label class="flex items-center justify-between p-4 rounded-lg border-2 border-transparent hover:border-green-500 cursor-pointer bg-gray-50 pago-tipo-option">
+                        <input type="radio" name="estado_pago" value="abono_30" class="hidden">
+                        <div>
+                            <p class="font-semibold text-gray-800">Abono 30%</p>
+                            <p class="text-sm text-gray-500">Paga el resto al llegar</p>
+                        </div>
+                        <span class="font-bold text-green-600 text-lg">${{ abono_30|floatformat:0 }}</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Metodo -->
+            <div class="mb-6">
+                <h3 class="font-medium text-gray-700 mb-3">Forma de pago</h3>
+                <div class="space-y-2">
+                    {% for value, label in tipos_pago %}
+                    <label class="flex items-center gap-4 p-4 rounded-lg border-2 border-transparent hover:border-green-500 cursor-pointer bg-gray-50 metodo-option">
+                        <input type="radio" name="tipo_pago" value="{{ value }}" class="hidden" {% if forloop.first %}checked{% endif %}>
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                            {% if value == 'efectivo' %}
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            {% elif value == 'nequi' %}
+                            <span class="text-green-600 font-bold text-xs">N</span>
+                            {% elif value == 'pse' %}
+                            <span class="text-green-600 font-bold text-xs">PSE</span>
+                            {% elif value == 'wompi' %}
+                            <span class="text-green-600 font-bold text-xs">W</span>
+                            {% else %}
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ label }}</p>
+                            {% if value == 'efectivo' %}
+                            <p class="text-sm text-gray-500">Paga al llegar a la cancha</p>
+                            {% elif value == 'transferencia' %}
+                            <p class="text-sm text-gray-500">Transferencia bancaria</p>
+                            {% elif value == 'nequi' %}
+                            <p class="text-sm text-gray-500">Paga con tu billetera Nequi</p>
+                            {% elif value == 'pse' %}
+                            <p class="text-sm text-gray-500">Pago seguro en linea</p>
+                            {% elif value == 'wompi' %}
+                            <p class="text-sm text-gray-500">Pasarela de pago Bancolombia</p>
+                            {% endif %}
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-8 flex gap-4">
+                <a href="{% url 'booking_step5' %}" class="btn-secondary flex-1 text-center">Atras</a>
+                <button type="submit" class="btn-primary flex-1">Confirmar Reserva</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function setupRadioGroup(selector) {
+    document.querySelectorAll(selector).forEach(label => {
+        label.addEventListener('click', () => {
+            document.querySelectorAll(selector).forEach(l => l.classList.remove('border-green-500'));
+            label.classList.add('border-green-500');
+        });
+    });
+}
+setupRadioGroup('.pago-tipo-option');
+setupRadioGroup('.metodo-option');
+document.querySelector('.pago-tipo-option').classList.add('border-green-500');
+document.querySelector('.metodo-option').classList.add('border-green-500');
+</script>
+{% endblock %}

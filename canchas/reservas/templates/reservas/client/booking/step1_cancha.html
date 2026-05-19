@@ -1,0 +1,76 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Reservar - Elegir Cancha{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Progress -->
+    <div class="flex items-center justify-center gap-2 mb-8">
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">1</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">2</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">3</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">4</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">5</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">6</div>
+    </div>
+
+    <h1 class="text-2xl font-bold text-gray-800 mb-2">Elige tu cancha</h1>
+    <p class="text-gray-500 mb-6">Selecciona la cancha donde quieres jugar</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for cancha in canchas %}
+            <label class="card p-5 cursor-pointer border-2 border-transparent hover:border-green-500 transition-all cancha-option">
+                <input type="radio" name="cancha_id" value="{{ cancha.pk }}" class="hidden cancha-radio" required>
+                <div class="flex items-center gap-4">
+                    {% if cancha.imagen %}
+                        <img src="{{ cancha.imagen.url }}" class="w-20 h-20 rounded-lg object-cover flex-shrink-0">
+                    {% else %}
+                        <div class="w-20 h-20 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex-shrink-0 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/></svg>
+                        </div>
+                    {% endif %}
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-800">{{ cancha.nombre }}</h3>
+                        <p class="text-sm text-gray-500">{{ cancha.get_tipo_display }} | {{ cancha.capacidad }} jugadores</p>
+                        <p class="text-lg font-bold text-green-600 mt-1">${{ cancha.precio_por_hora|floatformat:0 }}/hora</p>
+                    </div>
+                    <div class="check-icon hidden">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                </div>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="mt-8 flex justify-end">
+            <button type="submit" class="btn-primary py-3 px-8">Continuar</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.querySelectorAll('.cancha-option').forEach(label => {
+    label.addEventListener('click', () => {
+        document.querySelectorAll('.cancha-option').forEach(l => {
+            l.classList.remove('border-green-500');
+            l.querySelector('.check-icon').classList.add('hidden');
+        });
+        label.classList.add('border-green-500');
+        label.querySelector('.check-icon').classList.remove('hidden');
+    });
+});
+{% if request.GET.cancha %}
+document.addEventListener('DOMContentLoaded', () => {
+    const radio = document.querySelector('input[value="{{ request.GET.cancha }}"]');
+    if (radio) { radio.checked = true; radio.closest('.cancha-option').click(); }
+});
+{% endif %}
+</script>
+{% endblock %}

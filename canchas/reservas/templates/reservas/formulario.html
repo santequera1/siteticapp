@@ -1,0 +1,214 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Registrar Reserva{% endblock %}
+
+{% block content %}
+
+<style>
+    body{
+      overflow-x: hidden;
+        height: auto;
+    }
+#guardar {
+    margin-top: 20px;
+    
+}
+#form-reserva .text-sm {
+    font-size: 1em;
+    line-height: 2rem;
+    margin-bottom: 3px;
+}
+#disptext {
+    text-align: center !important;
+    font-size: 2em;
+    text-shadow: 0px 4px 2px rgba(0, 0, 0, 0.69);
+    transform: skewX(-6deg);
+    color: white;
+}
+form#form-reserva {
+    width: 35%;
+    margin-bottom: 2em;
+}
+
+
+.p-4.mb-4.text-white.rounded-lg.bg-red-500 {
+    background: red;
+    text-align: center;
+    font-size: 1.2em;
+    position: absolute;
+    left: 45%;
+    bottom: .5%;
+    transform: scale(.9);
+}
+
+    /* Estilos que solo aplican en pantallas menores a 768px (móviles) */
+@media (max-width: 768px) {
+    .p-4.mb-4.text-white.rounded-lg.bg-red-500 {
+    background: red;
+    text-align: center;
+    font-size: 1.2em;
+    position: absolute;
+    left: 6%;
+    bottom: -2.15%;
+    transform: scale(.9);
+    display: block !important;
+}
+
+#form-reserva .text-sm {
+    font-size: 1em;
+    line-height: 2rem;
+    margin-bottom: 3px;
+}
+
+
+#guardar {
+    margin-top: 20px;
+    padding: 12px 20px;
+    font-size: 1.2em;
+    width: 100%;
+}
+form#form-reserva {
+    width: 100%;
+}
+#titulo-principal {
+    font-size: 2em;
+    text-shadow: 0px 4px 2px rgba(0, 0, 0, 0.69);
+    transform: skewX(-6deg);
+    padding: 0 !important;
+    margin-bottom: 10px !important;
+    line-height: 16px;
+}
+#disptext {
+    text-align: center !important;
+    font-size: 1.3em;
+    text-shadow: 0px 4px 2px rgba(0, 0, 0, 0.69);
+    transform: skewX(-6deg);
+    color: white;
+}
+
+}
+</style>
+<h2 class="text-xl text-white font-bold mb-4 bg-green-500" id="disptext">Registrar una Reserva  <a href="{% url 'calendario' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-normal py-2 px-4 rounded" style="margin-left: 8px;">
+    Ver calendario
+</a></h2>
+
+<form method="POST" class="max-w-sm mx-auto bg-white p-6 rounded-lg shadow-md" id="form-reserva">
+    {% csrf_token %}
+    
+    <div class="mb-5">
+        <label for="cancha" class="block mb-2 text-sm font-medium text-gray-900">Cancha</label>
+        <select id="cancha" name="cancha" class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+            <option value="">Seleccionar Cancha</option>
+            <option value="Cancha pequeña de fútbol 5">Cancha fútbol 5</option>
+            <option value="Cancha sintética de fútbol 5 (pequeña)">Cancha fútbol 5 (pequeña)</option>
+            <option value="Cancha de fútbol 7">Cancha de fútbol 7</option>
+        </select>
+    </div>
+    
+    <div class="mb-5">
+        <label for="fecha_inicio" class="block mb-2 text-sm font-medium text-gray-900">Fecha y hora de inicio</label>
+        <input type="datetime-local" id="fecha_inicio" name="fecha_inicio" class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+    </div>
+    
+    <div class="mb-5">
+        <label for="fecha_fin" class="block mb-2 text-sm font-medium text-gray-900">Fecha y hora de finalización</label>
+        <input type="datetime-local" id="fecha_fin" name="fecha_fin" class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+    </div>
+    
+    <div class="mb-5">
+        <label for="cliente" class="block mb-2 text-sm font-medium text-gray-900">Cliente</label>
+        <input type="text" id="cliente" name="cliente" class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+    </div>
+    
+    <div class="mb-5">
+        <label for="nota" class="block mb-2 text-sm font-medium text-gray-900">Nota adicional</label>
+        <textarea id="nota" name="nota" class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></textarea>
+    </div>
+    
+    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2" id="guardar">Guardar Reserva</button>
+</form>
+
+
+
+<script>
+    let reservas = JSON.parse('{{ reservas|safe }}');
+
+   document.addEventListener('DOMContentLoaded', function () {
+        let reservas = JSON.parse('{{ reservas|safe }}');  // Aquí cargamos las reservas desde Django
+
+        document.getElementById('fecha_inicio').addEventListener('change', function () {
+            let fechaSeleccionada = new Date(this.value);
+            let canchaSeleccionada = document.getElementById('cancha').value;
+
+            // Verificar si la cancha está ocupada en el horario seleccionado
+            let ocupado = reservas.some(reserva =>
+                reserva.cancha == canchaSeleccionada &&
+                new Date(reserva.fecha_inicio) <= fechaSeleccionada &&
+                new Date(reserva.fecha_fin) >= fechaSeleccionada
+            );
+
+            // Si está ocupado, mostrar SweetAlert y limpiar el campo de fecha
+            if (ocupado) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '¡Error!',
+                    text: 'Este horario ya está reservado. Escoge otro.',
+                    confirmButtonText: 'Aceptar'
+                });
+                this.value = "";  // Limpiar el campo de fecha de inicio si está ocupado
+            }
+        });
+    });
+
+ </script>
+ 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Obtener la fecha y hora actuales
+        let today = new Date();
+
+        // Redondear la hora al siguiente en punto (si no está en punto)
+        if (today.getMinutes() !== 0) {
+            // Redondear hacia la siguiente hora completa
+            today.setMinutes(0);
+            today.setSeconds(0);
+            today.setMilliseconds(0);
+            today.setHours(today.getHours() + 1);  // Avanzar una hora si no está en punto
+        } else {
+            today.setSeconds(0);
+            today.setMilliseconds(0);  // Eliminar segundos y milisegundos si ya está en punto
+        }
+
+        // Formatear la fecha en el formato adecuado (yyyy-MM-ddTHH:mm)
+        let formattedStartDate = today.toISOString().slice(0, 16);  // Cortamos para obtener el formato yyyy-MM-ddTHH:mm
+        
+        // Asignar la fecha actual redondeada al campo de fecha_inicio
+        document.getElementById('fecha_inicio').value = formattedStartDate;
+
+        // Establecer la fecha de finalización a 1 hora después de la fecha de inicio
+        let endDate = new Date(today);
+        endDate.setHours(endDate.getHours() + 0);  // Añadir una hora a la hora de inicio
+
+        // Formatear la fecha de finalización en el formato adecuado (yyyy-MM-ddTHH:mm)
+        let formattedEndDate = endDate.toISOString().slice(0, 16);
+        
+        // Asignar la fecha de finalización al campo de fecha_fin
+        document.getElementById('fecha_fin').value = formattedEndDate;
+    });
+</script>
+
+
+
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="p-4 mb-4 text-white rounded-lg {% if message.tags == 'success' %}bg-green-500{% else %}bg-red-500{% endif %}">
+           
+            {{ message }}
+        
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- SweetAlert JS -->
+{% endblock %}

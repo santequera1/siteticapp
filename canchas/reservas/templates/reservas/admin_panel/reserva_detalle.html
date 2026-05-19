@@ -1,0 +1,81 @@
+{% extends 'reservas/base_admin.html' %}
+{% load humanize %}
+
+{% block page_title %}Reserva #{{ reserva.pk }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 720px;">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+        <a href="{% url 'admin_reservas' %}" class="btn-ghost" style="padding: 6px 12px;">← Volver</a>
+        <span class="badge badge-{{ reserva.estado }}">{{ reserva.get_estado_display }}</span>
+    </div>
+
+    <div class="card card-padded" style="margin-bottom: 14px;">
+        <h2 style="margin: 0 0 18px; font-size: 18px;">Detalle de la reserva</h2>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+                <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Cancha</p>
+                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.cancha.nombre }}</p>
+            </div>
+            <div>
+                <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Fecha</p>
+                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.fecha_inicio|date:"l d M Y" }}</p>
+            </div>
+            <div>
+                <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Horario</p>
+                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.fecha_inicio|time:"H:i" }} – {{ reserva.fecha_fin|time:"H:i" }}</p>
+            </div>
+            <div>
+                <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Duración</p>
+                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.duracion }} hora{{ reserva.duracion|pluralize:"s" }}</p>
+            </div>
+            <div>
+                <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Cliente</p>
+                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.cliente_nombre }}</p>
+            </div>
+            <div>
+                <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Teléfono</p>
+                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.cliente_telefono|default:"—" }}</p>
+            </div>
+            <div>
+                <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Método de pago</p>
+                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.get_tipo_pago_display }}</p>
+            </div>
+            <div>
+                <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Estado de pago</p>
+                <p style="margin: 4px 0 0;"><span class="badge badge-{{ reserva.estado_pago }}">{{ reserva.get_estado_pago_display }}</span></p>
+            </div>
+        </div>
+
+        {% if reserva.nota %}
+        <div style="margin-top: 18px; padding: 12px 14px; background: #f8fafc; border-radius: 10px; border: 1px solid var(--c-border);">
+            <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 4px;">Nota</p>
+            <p style="font-size: 13px; color: var(--c-text); margin: 0;">{{ reserva.nota }}</p>
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--c-border); display: flex; align-items: center; justify-content: space-between;">
+            <p style="font-size: 11px; color: var(--c-text-muted); margin: 0;">
+                Creada: {{ reserva.created_at|date:"d M Y H:i" }}
+            </p>
+            <span style="font-size: 24px; font-weight: 700; color: var(--c-accent);">${{ reserva.total|floatformat:0|intcomma }}</span>
+        </div>
+    </div>
+
+    <div class="card card-padded">
+        <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 700;">Acciones</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% if reserva.estado == 'pendiente' %}
+                <a href="{% url 'admin_reserva_estado' reserva.pk 'confirmada' %}" class="btn-primary">Confirmar</a>
+                <a href="{% url 'admin_reserva_estado' reserva.pk 'cancelada' %}" class="btn-danger">Cancelar</a>
+            {% elif reserva.estado == 'confirmada' %}
+                <a href="{% url 'admin_reserva_estado' reserva.pk 'finalizada' %}" class="btn-primary">Finalizar</a>
+                <a href="{% url 'admin_reserva_estado' reserva.pk 'cancelada' %}" class="btn-danger">Cancelar</a>
+            {% elif reserva.estado == 'cancelada' %}
+                <a href="{% url 'admin_reserva_estado' reserva.pk 'pendiente' %}" class="btn-warning">Reactivar</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,260 @@
+{% extends 'reservas/base_admin.html' %}
+
+{% block page_title %}Calendario{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cal-container {
+        background: white; border-radius: 20px; overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04);
+    }
+    .cal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 20px 24px; border-bottom: 1px solid #f1f5f9;
+        flex-wrap: wrap; gap: 12px;
+    }
+    .cal-nav { display: flex; align-items: center; gap: 8px; }
+    .cal-nav-btn {
+        width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e2e8f0;
+        background: white; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s; color: #64748b; text-decoration: none;
+    }
+    .cal-nav-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .cal-today-btn {
+        padding: 8px 20px; border-radius: 10px; background: linear-gradient(135deg, #059669, #34d399);
+        color: white; font-weight: 600; font-size: 13px; text-decoration: none;
+        box-shadow: 0 2px 8px rgba(5,150,105,0.25); transition: all 0.2s;
+    }
+    .cal-today-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(5,150,105,0.35); }
+    .cal-date-title { font-size: 18px; font-weight: 700; color: #0f172a; }
+    .cal-date-input { border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; font-size: 13px; cursor: pointer; }
+
+    .cal-grid {
+        display: grid; overflow-x: auto;
+    }
+    .cal-time-col {
+        position: sticky; left: 0; background: #fafbfc; z-index: 10;
+        min-width: 70px; border-right: 1px solid #f1f5f9;
+    }
+    .cal-time-cell {
+        height: 64px; display: flex; align-items: flex-start; justify-content: flex-end;
+        padding: 4px 12px 0 0; font-size: 12px; font-weight: 600; color: #94a3b8;
+        border-bottom: 1px solid #f8fafc;
+    }
+    .cal-cancha-col {
+        min-width: 200px; flex: 1; border-right: 1px solid #f1f5f9;
+    }
+    .cal-cancha-col:last-child { border-right: none; }
+    .cal-cancha-header {
+        height: 64px; display: flex; align-items: center; justify-content: center;
+        flex-direction: column; gap: 2px; border-bottom: 2px solid #e2e8f0;
+        background: linear-gradient(180deg, #fafbfc, #f8fafc);
+        position: sticky; top: 0; z-index: 5;
+    }
+    .cal-cancha-name { font-size: 13px; font-weight: 700; color: #0f172a; text-align: center; }
+    .cal-cancha-type { font-size: 10px; font-weight: 500; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .cal-cell {
+        height: 64px; border-bottom: 1px solid #f8fafc; position: relative;
+        transition: background 0.15s;
+    }
+    .cal-cell:hover { background: #f0fdf4; }
+    .cal-cell-half { border-bottom: 1px dashed #f1f5f9; }
+
+    .cal-event {
+        position: absolute; left: 4px; right: 4px; top: 2px;
+        border-radius: 10px; padding: 8px 10px; overflow: hidden;
+        cursor: pointer; transition: all 0.2s; z-index: 2;
+        text-decoration: none; display: block;
+    }
+    .cal-event:hover { transform: scale(1.02); z-index: 10; }
+    .cal-event-confirmada {
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        border-left: 3px solid #059669;
+    }
+    .cal-event-pendiente {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border-left: 3px solid #d97706;
+    }
+    .cal-event-finalizada {
+        background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+        border-left: 3px solid #64748b;
+    }
+    .cal-event-title { font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.2; }
+    .cal-event-detail { font-size: 10px; color: #475569; margin-top: 2px; }
+    .cal-event-time { font-size: 10px; font-weight: 600; color: #64748b; margin-top: 1px; }
+
+    .cal-empty-slot {
+        position: absolute; inset: 2px 4px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.2s;
+    }
+    .cal-cell:hover .cal-empty-slot { opacity: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cal-container">
+    <!-- Header -->
+    <div class="cal-header">
+        <div class="cal-nav">
+            <a href="?fecha={{ prev_fecha }}" class="cal-nav-btn">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <a href="?fecha={% now 'Y-m-d' %}" class="cal-today-btn">Hoy</a>
+            <a href="?fecha={{ next_fecha }}" class="cal-nav-btn">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+
+        <div class="cal-date-title">
+            {{ fecha|date:"l, d \d\e F \d\e Y" }}
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px;">
+            <input type="date" class="cal-date-input" value="{{ fecha|date:'Y-m-d' }}" onchange="window.location='?fecha='+this.value">
+            <a href="{% url 'admin_reserva_crear' %}" class="btn-primary" style="padding:8px 16px; font-size:13px;">+ Nuevo</a>
+        </div>
+    </div>
+
+    <!-- Grid -->
+    <div style="overflow-x:auto; max-height:75vh; overflow-y:auto;">
+        <div class="cal-grid" style="grid-template-columns: 70px repeat({{ canchas|length }}, minmax(180px, 1fr)); min-width: {{ canchas|length|add:1 }}00px;">
+
+            <!-- Header row: time + cancha names -->
+            <div class="cal-time-col">
+                <div style="height:64px; display:flex; align-items:center; justify-content:center; border-bottom:2px solid #e2e8f0; background:#fafbfc;">
+                    <svg width="18" height="18" fill="none" stroke="#94a3b8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+            </div>
+            {% for cancha in canchas %}
+            <div class="cal-cancha-col">
+                <div class="cal-cancha-header">
+                    <span class="cal-cancha-name">{{ cancha.nombre }}</span>
+                    <span class="cal-cancha-type">{{ cancha.get_tipo_display }}</span>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Time rows -->
+            {% for hora in horas %}
+            <!-- Time label -->
+            <div class="cal-time-col">
+                <div class="cal-time-cell">{{ hora|stringformat:"02d" }}:00</div>
+            </div>
+
+            <!-- Cells per cancha -->
+            {% for cancha in canchas %}
+            <div class="cal-cancha-col">
+                <div class="cal-cell" id="cell-{{ cancha.pk }}-{{ hora }}">
+                    {% with cell=mapa|default_if_none:"" %}
+                    {% endwith %}
+                </div>
+            </div>
+            {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Render events via JS since Django template can't do nested dict lookups -->
+<script>
+var mapa = {};
+{% for cancha in canchas %}
+    mapa[{{ cancha.pk }}] = {};
+{% endfor %}
+
+{% for r in reservas_dia %}
+    // handled below
+{% endfor %}
+
+// We'll use the API to get events
+fetch('/api/reservas/{{ fecha|date:"Y-m-d" }}/')
+    .then(r => r.json())
+    .then(data => {
+        // Fallback: use main API
+    });
+
+// Better approach: inject from view data
+var reservas = [
+    {% for cancha in canchas %}
+        {% for hora in horas %}
+        {% endfor %}
+    {% endfor %}
+];
+</script>
+
+<!-- Re-render with direct API call -->
+<script>
+(function() {
+    var fecha = '{{ fecha|date:"Y-m-d" }}';
+
+    fetch('/api/reservas/')
+        .then(function(r) { return r.json(); })
+        .then(function(eventos) {
+            eventos.forEach(function(ev) {
+                var start = new Date(ev.start);
+                var end = new Date(ev.end);
+                var evFecha = start.toISOString().split('T')[0];
+
+                if (evFecha !== fecha) return;
+
+                var canchaId = null;
+                // Find cancha ID from title
+                {% for cancha in canchas %}
+                if (ev.title.indexOf('{{ cancha.nombre }}') === 0) {
+                    canchaId = {{ cancha.pk }};
+                }
+                {% endfor %}
+
+                if (!canchaId) return;
+
+                var startHour = start.getHours();
+                var endHour = end.getHours() || 24;
+                var duration = endHour - startHour;
+                var heightPx = duration * 64;
+
+                var cell = document.getElementById('cell-' + canchaId + '-' + startHour);
+                if (!cell) return;
+
+                var estado = ev.extendedProps ? ev.extendedProps.estado : 'Pendiente';
+                var estadoClass = 'cal-event-pendiente';
+                if (estado === 'Confirmada') estadoClass = 'cal-event-confirmada';
+                else if (estado === 'Finalizada') estadoClass = 'cal-event-finalizada';
+
+                var cliente = ev.extendedProps ? ev.extendedProps.cliente : '';
+                var telefono = ev.extendedProps ? ev.extendedProps.telefono : '';
+                var total = ev.extendedProps ? ev.extendedProps.total : '';
+
+                var link = document.createElement('a');
+                link.href = '/admin-panel/reservas/' + ev.id + '/';
+                link.className = 'cal-event ' + estadoClass;
+                link.style.height = (heightPx - 4) + 'px';
+                link.innerHTML = '<div class="cal-event-title">' + cliente + '</div>' +
+                    '<div class="cal-event-detail">' + estado + '</div>' +
+                    '<div class="cal-event-time">' + start.getHours().toString().padStart(2,'0') + ':00 - ' + (endHour === 24 ? '00' : endHour.toString().padStart(2,'0')) + ':00</div>' +
+                    (total ? '<div class="cal-event-time" style="font-weight:700; color:#059669;">$' + total + '</div>' : '');
+
+                cell.style.position = 'relative';
+                cell.appendChild(link);
+            });
+        });
+})();
+</script>
+
+<!-- Legend -->
+<div style="margin-top:16px; display:flex; gap:20px; flex-wrap:wrap;">
+    <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#64748b;">
+        <div style="width:12px; height:12px; border-radius:3px; background:linear-gradient(135deg, #d1fae5, #a7f3d0); border-left:2px solid #059669;"></div>
+        Confirmada
+    </div>
+    <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#64748b;">
+        <div style="width:12px; height:12px; border-radius:3px; background:linear-gradient(135deg, #fef3c7, #fde68a); border-left:2px solid #d97706;"></div>
+        Pendiente
+    </div>
+    <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#64748b;">
+        <div style="width:12px; height:12px; border-radius:3px; background:linear-gradient(135deg, #e2e8f0, #cbd5e1); border-left:2px solid #64748b;"></div>
+        Finalizada
+    </div>
+</div>
+{% endblock %}

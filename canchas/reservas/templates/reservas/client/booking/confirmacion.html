@@ -1,0 +1,68 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Reserva Confirmada{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-12">
+    <div class="card p-8 text-center">
+        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Reserva Creada</h1>
+        <p class="text-gray-500 mb-6">Tu reserva fue registrada exitosamente</p>
+
+        <div class="bg-gray-50 rounded-lg p-6 text-left mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-sm text-gray-500">ID de reserva</span>
+                <span class="font-bold text-gray-800">#{{ reserva.pk }}</span>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Cancha</span>
+                    <span class="font-medium text-gray-800">{{ reserva.cancha.nombre }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Fecha</span>
+                    <span class="font-medium text-gray-800">{{ reserva.fecha_inicio|date:"d M Y" }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Horario</span>
+                    <span class="font-medium text-gray-800">{{ reserva.fecha_inicio|time:"H:i" }} - {{ reserva.fecha_fin|time:"H:i" }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Duracion</span>
+                    <span class="font-medium text-gray-800">{{ reserva.duracion }} hora{{ reserva.duracion|pluralize:"s" }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Cliente</span>
+                    <span class="font-medium text-gray-800">{{ reserva.cliente_nombre }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Metodo de pago</span>
+                    <span class="font-medium text-gray-800">{{ reserva.get_tipo_pago_display }}</span>
+                </div>
+                <div class="border-t pt-3 flex justify-between">
+                    <span class="text-gray-500">Estado</span>
+                    <span class="badge badge-{{ reserva.estado }}">{{ reserva.get_estado_display }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-bold text-gray-800">Total</span>
+                    <span class="font-bold text-green-600 text-lg">${{ reserva.total|floatformat:0 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-sm text-gray-400 mb-6">
+            El administrador confirmara tu reserva. Puedes consultar el estado usando tu numero de telefono.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+            <a href="{% url 'historial' %}?telefono={{ reserva.cliente_telefono }}" class="btn-primary flex-1">Ver mis reservas</a>
+            <a href="{% url 'home' %}" class="btn-secondary flex-1">Volver al inicio</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

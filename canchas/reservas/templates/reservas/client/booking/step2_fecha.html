@@ -1,0 +1,50 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Reservar - Elegir Fecha{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-8">
+    <!-- Progress -->
+    <div class="flex items-center justify-center gap-2 mb-8">
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">1</div>
+        <div class="w-12 h-1 bg-green-600"></div>
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">2</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">3</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">4</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">5</div>
+        <div class="w-12 h-1 bg-gray-200"></div>
+        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold">6</div>
+    </div>
+
+    <div class="card p-6">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="{% url 'booking_step1' %}" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">Elige la fecha</h1>
+                <p class="text-sm text-gray-500">{{ cancha.nombre }}</p>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="date" name="fecha" class="form-input text-lg py-4 text-center" required
+                   min="{{ today|default:'2026-01-01' }}"
+                   id="fecha-input">
+
+            <div class="mt-8 flex gap-4">
+                <a href="{% url 'booking_step1' %}" class="btn-secondary flex-1 text-center">Atras</a>
+                <button type="submit" class="btn-primary flex-1">Continuar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('fecha-input').min = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

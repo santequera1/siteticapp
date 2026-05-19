@@ -1,0 +1,317 @@
+{% extends 'reservas/base_admin.html' %}
+{% load humanize %}
+{% block page_title %}Reportes{% endblock %}
+
+{% block extra_head %}
+<style>
+    .filter-card { background: white; border: 1px solid var(--c-border); border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+    .range-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .range-chips a {
+        padding: 7px 14px; border-radius: 999px; background: white; border: 1px solid var(--c-border);
+        font-size: 13px; font-weight: 600; color: var(--c-text-muted); text-decoration: none;
+    }
+    .range-chips a.active { background: var(--c-text); color: white; border-color: var(--c-text); }
+    .custom-range { display: none; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid var(--c-border); }
+    .custom-range.show { display: flex; }
+    .custom-range label { font-size: 11px; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .kpi-card { background: white; border: 1px solid var(--c-border); border-radius: 12px; padding: 16px; }
+    .kpi-card .lab { font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi-card .val { font-size: 22px; font-weight: 700; color: var(--c-text); margin-top: 4px; letter-spacing: -0.01em; line-height: 1.1; }
+    .kpi-card .sub { font-size: 11px; color: var(--c-text-muted); margin-top: 4px; }
+    .kpi-card.big .val { font-size: 28px; color: var(--c-accent); }
+    .trend { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 6px; margin-top: 4px; }
+    .trend.up { background: #dcfce7; color: #166534; }
+    .trend.down { background: #fee2e2; color: #991b1b; }
+    .trend.flat { background: #f1f5f9; color: #475569; }
+
+    .breakdown-row { display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--c-border); }
+    .breakdown-row:last-child { border-bottom: none; }
+    .breakdown-row .name { font-size: 13px; color: var(--c-text); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .breakdown-row .bar { background: #f1f5f9; border-radius: 999px; height: 8px; overflow: hidden; }
+    .breakdown-row .bar > div { height: 100%; background: var(--c-accent); border-radius: 999px; transition: width .25s; }
+    .breakdown-row .amt { font-size: 13px; font-weight: 700; color: var(--c-text); min-width: 90px; text-align: right; }
+
+    .hour-chart { display: grid; grid-template-columns: 36px 1fr; gap: 4px 8px; align-items: center; padding: 4px 0; }
+    .hour-chart .lab { font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-align: right; }
+    .hour-chart .bar { background: #f1f5f9; height: 16px; border-radius: 4px; position: relative; overflow: hidden; }
+    .hour-chart .bar > div { background: var(--c-accent); height: 100%; border-radius: 4px; transition: width .25s; }
+    .hour-chart .bar > span { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 600; color: var(--c-text); white-space: nowrap; }
+
+    .empty-mini { padding: 14px 12px; color: var(--c-text-muted); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .empty-mini svg { flex-shrink: 0; opacity: .5; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-h" style="margin-bottom: 14px;">
+    <div>
+        <h2 style="margin: 0;">Reportes</h2>
+        <p style="font-size: 13px; color: var(--c-text-muted); margin: 4px 0 0;">{{ rango_label }}{% if cancha_id %} · cancha filtrada{% endif %}</p>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="filter-card">
+    <form method="get" id="rangeForm">
+        <div class="range-chips">
+            <a href="?rango=hoy{% if cancha_id %}&cancha={{ cancha_id }}{% endif %}" class="{% if rango == 'hoy' %}active{% endif %}">Hoy</a>
+            <a href="?rango=ayer{% if cancha_id %}&cancha={{ cancha_id }}{% endif %}" class="{% if rango == 'ayer' %}active{% endif %}">Ayer</a>
+            <a href="?rango=semana{% if cancha_id %}&cancha={{ cancha_id }}{% endif %}" class="{% if rango == 'semana' %}active{% endif %}">7 días</a>
+            <a href="?rango=mes{% if cancha_id %}&cancha={{ cancha_id }}{% endif %}" class="{% if rango == 'mes' %}active{% endif %}">Este mes</a>
+            <a href="?rango=mes_anterior{% if cancha_id %}&cancha={{ cancha_id }}{% endif %}" class="{% if rango == 'mes_anterior' %}active{% endif %}">Mes anterior</a>
+            <a href="#" onclick="document.getElementById('customRange').classList.add('show'); return false;" class="{% if rango == 'personalizado' %}active{% endif %}">Personalizado…</a>
+        </div>
+
+        <div id="customRange" class="custom-range {% if rango == 'personalizado' %}show{% endif %}">
+            <input type="hidden" name="rango" value="personalizado">
+            <div>
+                <label style="display: block; margin-bottom: 4px;">Desde</label>
+                <input type="date" name="desde" class="form-input" value="{{ fecha_desde|date:'Y-m-d' }}" required>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px;">Hasta</label>
+                <input type="date" name="hasta" class="form-input" value="{{ fecha_hasta|date:'Y-m-d' }}" required>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px;">Cancha</label>
+                <select name="cancha" class="form-select">
+                    <option value="">Todas</option>
+                    {% for c in canchas %}<option value="{{ c.pk }}" {% if cancha_id == c.pk %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary" style="align-self: end;">Aplicar</button>
+        </div>
+
+        {% if rango != 'personalizado' %}
+        <div style="display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--c-border); margin-top: 10px;">
+            <label style="font-size: 11px; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Cancha</label>
+            <select name="cancha" class="form-select" onchange="this.form.submit()" style="max-width: 240px;">
+                <option value="">Todas las canchas</option>
+                {% for c in canchas %}<option value="{{ c.pk }}" {% if cancha_id == c.pk %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+            </select>
+            <input type="hidden" name="rango" value="{{ rango }}">
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+{% with t=trend|default:None %}
+<!-- KPIs financieros -->
+<div class="kpi-grid" style="margin-bottom: 12px;">
+    <div class="kpi-card big">
+        <div class="lab">Total ingresos</div>
+        <div class="val">${{ kpis.total|floatformat:0|intcomma }}</div>
+        {% if t.total is not None %}
+        {% if t.total > 0 %}<span class="trend up">↑ {{ t.total|floatformat:1 }}%</span>
+        {% elif t.total < 0 %}<span class="trend down">↓ {{ t.total|floatformat:1 }}%</span>
+        {% else %}<span class="trend flat">— sin cambio</span>{% endif %}
+        <span class="sub">vs período anterior</span>
+        {% else %}<span class="sub">Reservas + ventas POS</span>{% endif %}
+    </div>
+    <div class="kpi-card">
+        <div class="lab">Ingresos · Reservas</div>
+        <div class="val">${{ kpis.ingreso_reservas|floatformat:0|intcomma }}</div>
+        {% if t.ingreso_reservas is not None %}
+        {% if t.ingreso_reservas > 0 %}<span class="trend up">↑ {{ t.ingreso_reservas|floatformat:1 }}%</span>
+        {% elif t.ingreso_reservas < 0 %}<span class="trend down">↓ {{ t.ingreso_reservas|floatformat:1 }}%</span>
+        {% else %}<span class="trend flat">—</span>{% endif %}
+        {% endif %}
+    </div>
+    <div class="kpi-card">
+        <div class="lab">Ingresos · POS</div>
+        <div class="val">${{ kpis.ingreso_ventas|floatformat:0|intcomma }}</div>
+        {% if t.ingreso_ventas is not None %}
+        {% if t.ingreso_ventas > 0 %}<span class="trend up">↑ {{ t.ingreso_ventas|floatformat:1 }}%</span>
+        {% elif t.ingreso_ventas < 0 %}<span class="trend down">↓ {{ t.ingreso_ventas|floatformat:1 }}%</span>
+        {% else %}<span class="trend flat">—</span>{% endif %}
+        {% endif %}
+    </div>
+    <div class="kpi-card">
+        <div class="lab"># Reservas</div>
+        <div class="val">{{ kpis.n_reservas }}</div>
+        {% if t.n_reservas is not None %}
+        {% if t.n_reservas > 0 %}<span class="trend up">↑ {{ t.n_reservas|floatformat:1 }}%</span>
+        {% elif t.n_reservas < 0 %}<span class="trend down">↓ {{ t.n_reservas|floatformat:1 }}%</span>
+        {% else %}<span class="trend flat">—</span>{% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- KPIs operativos -->
+<div class="kpi-grid" style="margin-bottom: 18px;">
+    <div class="kpi-card">
+        <div class="lab"># Ventas POS</div>
+        <div class="val">{{ kpis.n_ventas }}</div>
+        {% if t.n_ventas is not None %}
+        {% if t.n_ventas > 0 %}<span class="trend up">↑ {{ t.n_ventas|floatformat:1 }}%</span>
+        {% elif t.n_ventas < 0 %}<span class="trend down">↓ {{ t.n_ventas|floatformat:1 }}%</span>
+        {% else %}<span class="trend flat">—</span>{% endif %}
+        {% endif %}
+    </div>
+    <div class="kpi-card">
+        <div class="lab">Ingreso prom. / reserva</div>
+        <div class="val">${{ kpis.ingreso_prom_reserva|floatformat:0|intcomma }}</div>
+        <span class="sub">{{ kpis.n_reservas }} reserva{{ kpis.n_reservas|pluralize:"s" }}</span>
+    </div>
+    <div class="kpi-card">
+        <div class="lab">Horas reservadas</div>
+        <div class="val">{{ horas_reservadas }}</div>
+        <span class="sub">h-slot vendidos</span>
+    </div>
+    <div class="kpi-card">
+        <div class="lab">Métodos de pago activos</div>
+        <div class="val">{{ metodos_pago|length }}</div>
+        <span class="sub">en el período</span>
+    </div>
+</div>
+{% endwith %}
+
+<!-- Sección dos columnas -->
+<div class="two-col">
+    <div class="card card-padded">
+        <h3 style="margin: 0 0 12px; font-size: 15px; font-weight: 700;">Ingresos por cancha</h3>
+        {% if por_cancha %}
+            {% for c in por_cancha %}
+            <div class="breakdown-row">
+                <div class="name">{{ c.nombre }} <small style="color:var(--c-text-muted);">· {{ c.n }} res.</small></div>
+                <div class="bar"><div style="width: {{ c.pct|floatformat:1 }}%;"></div></div>
+                <div class="amt">${{ c.ingreso|floatformat:0|intcomma }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-mini">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
+                Sin reservas en este período.
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card card-padded">
+        <h3 style="margin: 0 0 12px; font-size: 15px; font-weight: 700;">Top productos vendidos</h3>
+        {% if por_producto %}
+            {% for p in por_producto|slice:":10" %}
+            <div class="breakdown-row">
+                <div class="name">{{ p.nombre }} <small style="color:var(--c-text-muted);">× {{ p.cantidad }}</small></div>
+                <div class="bar"><div style="width: {{ p.pct|floatformat:1 }}%;"></div></div>
+                <div class="amt">${{ p.ingreso|floatformat:0|intcomma }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-mini">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0v10l-8 4-8-4V7"/></svg>
+                Sin ventas POS en este período.
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card card-padded">
+        <h3 style="margin: 0 0 12px; font-size: 15px; font-weight: 700;">Ingresos por categoría</h3>
+        {% if por_categoria %}
+            {% for c in por_categoria %}
+            <div class="breakdown-row">
+                <div class="name">{{ c.nombre }}</div>
+                <div class="bar"><div style="width: {{ c.pct|floatformat:1 }}%;"></div></div>
+                <div class="amt">${{ c.ingreso|floatformat:0|intcomma }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-mini"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Sin datos.</div>
+        {% endif %}
+    </div>
+
+    <div class="card card-padded">
+        <h3 style="margin: 0 0 12px; font-size: 15px; font-weight: 700;">Ventas POS por método de pago</h3>
+        {% if metodos_pago %}
+            {% for m in metodos_pago %}
+            <div class="breakdown-row">
+                <div class="name">{{ m.metodo|capfirst }} <small style="color:var(--c-text-muted);">· {{ m.n }} venta{{ m.n|pluralize:"s" }}</small></div>
+                <div class="bar"><div style="width: {{ m.pct|floatformat:1 }}%;"></div></div>
+                <div class="amt">${{ m.ingreso|floatformat:0|intcomma }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-mini"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>Sin datos.</div>
+        {% endif %}
+    </div>
+
+    <div class="card card-padded">
+        <h3 style="margin: 0 0 12px; font-size: 15px; font-weight: 700;">Ventas POS por hora</h3>
+        {% if ventas_por_hora %}
+            {% for h in ventas_por_hora %}
+            <div class="hour-chart">
+                <span class="lab">{{ h.hora|stringformat:"02d" }}:00</span>
+                <div class="bar">
+                    <div style="width: {{ h.pct|floatformat:1 }}%;"></div>
+                    {% if h.n %}<span>{{ h.n }} · ${{ h.monto|floatformat:0|intcomma }}</span>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-mini"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Sin ventas en este período.</div>
+        {% endif %}
+    </div>
+
+    <div class="card card-padded">
+        <h3 style="margin: 0 0 12px; font-size: 15px; font-weight: 700;">Horarios más reservados</h3>
+        {% if horarios_top %}
+            {% for h in horarios_top %}
+            <div class="breakdown-row">
+                <div class="name">{{ h.hora|stringformat:"02d" }}:00 – {{ h.hora|add:1|stringformat:"02d" }}:00</div>
+                <div class="bar"><div style="width: {{ h.pct|floatformat:1 }}%;"></div></div>
+                <div class="amt">{{ h.n }} h-slot</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-mini"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Sin reservas en este período.</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Cierre de caja del día -->
+<div class="card card-padded" style="margin-top: 16px;">
+    <h3 style="margin: 0 0 4px; font-size: 15px; font-weight: 700;">Cierre de caja · hoy</h3>
+    <p style="font-size: 12px; color: var(--c-text-muted); margin: 0 0 14px;">Resumen para cuadrar al cierre del turno.</p>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="lab">Total POS hoy</div>
+            <div class="val">${{ cierre_total|floatformat:0|intcomma }}</div>
+            <span class="sub">{{ cierre_count }} venta{{ cierre_count|pluralize:"s" }}</span>
+        </div>
+        <div class="kpi-card">
+            <div class="lab">Pagos reservas (hoy)</div>
+            <div class="val">${{ cierre_ingreso_reservas|floatformat:0|intcomma }}</div>
+            <span class="sub">{{ cierre_n_reservas }} reserva{{ cierre_n_reservas|pluralize:"s" }}</span>
+        </div>
+        {% for m in cierre_metodos %}
+        <div class="kpi-card">
+            <div class="lab">{{ m.metodo|capfirst }}</div>
+            <div class="val">${{ m.ingreso|floatformat:0|intcomma }}</div>
+            <span class="sub">{{ m.n }} venta{{ m.n|pluralize:"s" }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Productos sin movimiento -->
+<div class="card card-padded" style="margin-top: 16px;">
+    <h3 style="margin: 0 0 4px; font-size: 15px; font-weight: 700;">Productos sin movimiento en el período</h3>
+    <p style="font-size: 12px; color: var(--c-text-muted); margin: 0 0 12px;">Posibles candidatos a promoción o retiro.</p>
+
+    {% if sin_movimiento %}
+    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+        {% for p in sin_movimiento %}
+        <span style="padding: 6px 10px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; font-size: 12px;">
+            {{ p.nombre }} <small style="color: #92400e; font-weight: 500;">({{ p.get_categoria_display }})</small>
+        </span>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-mini" style="padding: 4px 0;">
+        <svg width="18" height="18" fill="none" stroke="var(--c-accent)" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        Todos los productos activos tuvieron al menos una venta.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

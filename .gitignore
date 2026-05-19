@@ -1,0 +1,71 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===== Virtual env =====
+env/
+venv/
+.venv/
+ENV/
+
+# ===== Django =====
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+canchas/db.sqlite3
+canchas/db.sqlite3-journal
+
+# Static collected (regenera con collectstatic en cada server)
+canchas/staticfiles/
+
+# Media subido por usuarios (no commitear)
+# Excepto las fotos seed de canchas
+canchas/media/*
+!canchas/media/canchas/
+canchas/media/canchas/*
+!canchas/media/canchas/futb7.webp
+!canchas/media/canchas/futb9.webp
+
+# ===== Node =====
+node_modules/
+canchas/theme/static_src/node_modules/
+package-lock.json
+canchas/theme/static_src/package-lock.json
+
+# ===== Editor / OS =====
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===== Secrets =====
+.env
+.env.*
+!.env.example
+secret_key.txt
+
+# ===== Misc =====
+*.bak
+*.tmp
+cambios.md
+prompt.md
+referencias_visuales/
+.claude/
+canchas/futb7.png
+canchas/futb9.png
+canchas/logo app.png
+canchas/portada.png
+ONBOARDING.md

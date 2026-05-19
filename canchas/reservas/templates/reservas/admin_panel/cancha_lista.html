@@ -1,0 +1,56 @@
+{% extends 'reservas/base_admin.html' %}
+{% load humanize %}
+
+{% block page_title %}Canchas{% endblock %}
+
+{% block content %}
+<div class="section-h" style="margin-bottom: 18px;">
+    <div>
+        <h2 style="margin:0;">Canchas</h2>
+        <p style="font-size: 13px; color: var(--c-text-muted); margin: 4px 0 0;">{{ canchas.count }} cancha{{ canchas.count|pluralize:"s" }} registrada{{ canchas.count|pluralize:"s" }}</p>
+    </div>
+    <a href="{% url 'admin_cancha_crear' %}" class="btn-primary">+ Nueva cancha</a>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+    {% for cancha in canchas %}
+    <div class="card" style="overflow: hidden;">
+        {% if cancha.imagen %}
+            <img src="{{ cancha.imagen.url }}" alt="{{ cancha.nombre }}" style="width: 100%; height: 140px; object-fit: cover;">
+        {% else %}
+            <div style="width: 100%; height: 140px; background: var(--c-accent-soft); display: flex; align-items: center; justify-content: center;">
+                <svg style="width: 40px; height: 40px; color: var(--c-accent); opacity: .5;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2"/></svg>
+            </div>
+        {% endif %}
+        <div style="padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                <div>
+                    <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 4px; color: var(--c-text);">{{ cancha.nombre }}</h3>
+                    <p style="font-size: 12px; color: var(--c-text-muted); margin: 0;">{{ cancha.get_tipo_display }} · {{ cancha.capacidad }} jugadores · {{ cancha.get_superficie_display }}</p>
+                </div>
+                {% if cancha.is_active %}
+                    <span class="badge badge-confirmada">Activa</span>
+                {% else %}
+                    <span class="badge badge-cancelada">Inactiva</span>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--c-border);">
+                <span style="font-size: 18px; font-weight: 700; color: var(--c-accent);">
+                    ${{ cancha.precio_por_hora|floatformat:0|intcomma }}<span style="font-size: 12px; font-weight: 500; color: var(--c-text-muted);">/h</span>
+                </span>
+                <div style="display: flex; gap: 6px;">
+                    <a href="{% url 'admin_cancha_editar' cancha.pk %}" class="btn-ghost" style="padding: 6px 12px; font-size: 12px;">Editar</a>
+                    <a href="{% url 'admin_cancha_eliminar' cancha.pk %}" class="btn-danger" style="padding: 6px 12px; font-size: 12px;">Eliminar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card card-padded" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+        <p style="color: var(--c-text-muted); margin: 0 0 12px;">No hay canchas creadas.</p>
+        <a href="{% url 'admin_cancha_crear' %}" class="btn-primary">Crear primera cancha</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

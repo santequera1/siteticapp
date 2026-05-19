@@ -1,0 +1,113 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Calendario de Reservas{% endblock %}
+
+{% block content %}
+<style>
+    .botones {
+        display: flex;
+        align-items: center;
+        justify-content: space-between
+    }
+
+    #calendar {
+        background-color: white;
+        padding: 1em;
+        box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+        border-radius: 6px;
+    }
+    #disptext {
+    text-align: center !important;
+    font-size: 2em;
+    text-shadow: 0px 4px 2px rgba(0, 0, 0, 0.69);
+    transform: skewX(-6deg);
+    color: white;
+}
+    /* Estilos que solo aplican en pantallas menores a 768px (móviles) */
+@media (max-width: 768px) {
+  .fc .fc-toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .fc-view-harness.fc-view-harness-active {
+    height: 400px !important;
+}
+#disptext {
+    text-align: center !important;
+}
+#form-reserva .text-sm {
+    font-size: 1em;
+    line-height: 2rem;
+    margin-bottom: 3px;
+}
+
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales-all.min.js"></script>
+
+<h2 class="text-xl font-bold mb-4" id="disptext">Disponibilidad de Canchas</h2>
+<div id='calendar'></div>
+<br>
+<div class="botones">
+    <a href="{% url 'formulario' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        Agendar Reserva
+    </a>
+    <button onclick="location.reload();" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2" >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12a7.5 7.5 0 111.5 4.5m-1.5-4.5H3m9 9v-1.5m0-13.5V3m4.5 4.5l-3-3m3 3l3-3M7.5 19.5l3-3m-3 3l-3-3"></path>
+        </svg>
+        Volver
+    </button>
+</div>
+
+
+
+
+<script>
+   document.addEventListener('DOMContentLoaded', function () {
+    let calendarEl = document.getElementById('calendar');
+    let calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'es', // Configuración para español
+        buttonText: {
+            today: 'Hoy',
+            month: 'Mes',
+            week: 'Semana',
+            day: 'Día'
+        },
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: '/api/reservas/',
+        dateClick: function(info) {
+            let fecha = info.dateStr;
+            calendar.changeView('timeGridDay', fecha);
+            calendar.refetchEvents();
+        },
+        eventRender: function(info) {
+            let event = info.event;
+            let startTime = new Date(event.start);
+            // Deshabilitar horas que no sean en punto
+            if (startTime.getMinutes() !== 0) {
+                event.remove();  // Remover evento si la hora no es en punto
+            }
+        }
+    });
+    calendar.render();
+});
+
+    </script>
+    
+    
+
+    
+    
+
+
+
+    
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'reservas/base.html' %}
+
+{% block title %}Reservas del día{% endblock %}
+
+{% block content %}
+<style>
+    .reserva-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .reserva-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .horario {
+        background-color: #FF5733;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+</style>
+
+<h2 class="text-xl text-white font-bold mb-4 bg-green-500" id="disptext">
+    Reservas para el día {{ fecha }}
+    <a href="{% url 'calendario' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-normal py-2 px-4 rounded" style="margin-left: 8px;">
+        Volver al Calendario
+    </a>
+</h2>
+
+<div class="max-w-4xl mx-auto">
+    {% if reservas %}
+        {% for reserva in reservas %}
+            <div class="reserva-card">
+                <div class="reserva-header">
+                    <div class="font-bold">{{ reserva.cancha }}</div>
+                    <div class="horario">{{ reserva.fecha_inicio|time:"H:i" }} - {{ reserva.fecha_fin|time:"H:i" }}</div>
+                </div>
+                <div class="mb-2">
+                    <span class="font-medium">Cliente:</span> {{ reserva.cliente }}
+                </div>
+                {% if reserva.nota %}
+                    <div>
+                        <span class="font-medium">Nota:</span> {{ reserva.nota }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center p-8 bg-gray-100 rounded-lg">
+            <p class="text-lg">No hay reservas para este día.</p>
+            <a href="{% url 'formulario' %}" class="inline-block mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Crear Reserva
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
