@@ -309,6 +309,8 @@ class Venta(models.Model):
         Reserva, on_delete=models.SET_NULL, null=True, blank=True, related_name='ventas',
         help_text='Asociar a una reserva (opcional)'
     )
+    comprobante = models.ImageField(upload_to='comprobantes/', blank=True, null=True,
+        help_text='Comprobante de transferencia (Nequi, etc.)')
     nota = models.TextField(blank=True)
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,

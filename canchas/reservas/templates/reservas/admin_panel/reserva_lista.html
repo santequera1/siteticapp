@@ -68,8 +68,32 @@
     </div>
 </div>
 
-<div class="card">
-    {% if reservas %}
+{% if reservas %}
+<!-- MOBILE: lista de cards -->
+<div class="res-mobile">
+    {% for r in reservas %}
+    <a href="{% url 'admin_reserva_detalle' r.pk %}" class="res-card">
+        <div class="res-card-top">
+            <div class="res-time-pill">{{ r.fecha_inicio|time:"g:i a" }}</div>
+            <div class="res-card-name">{{ r.cancha.nombre }}</div>
+            <div class="res-card-monto">${{ r.total|floatformat:0|intcomma }}</div>
+        </div>
+        <div class="res-card-mid">
+            <div class="res-card-cliente">
+                <strong>{{ r.cliente_nombre }}</strong>
+                <small>{{ r.fecha_inicio|date:"d M" }} · {{ r.cliente_telefono|default:"" }}</small>
+            </div>
+            <div class="res-card-badges">
+                <span class="badge badge-{{ r.estado }}">{{ r.get_estado_display }}</span>
+                <span class="badge badge-{{ r.estado_pago }}">{{ r.get_estado_pago_display }}</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- DESKTOP: tabla normal -->
+<div class="card res-desktop">
     <div class="table-wrap">
         <table class="table">
             <thead>
@@ -88,7 +112,7 @@
                 {% for r in reservas %}
                 <tr class="table-row">
                     <td class="nowrap-money">{{ r.fecha_inicio|date:"d M Y" }}</td>
-                    <td class="nowrap-money"><strong>{{ r.fecha_inicio|time:"H:i" }}</strong> – {{ r.fecha_fin|time:"H:i" }}</td>
+                    <td class="nowrap-money"><strong>{{ r.fecha_inicio|time:"g:i a" }}</strong> – {{ r.fecha_fin|time:"g:i a" }}</td>
                     <td>{{ r.cancha.nombre }}</td>
                     <td>{{ r.cliente_nombre }}<br><small style="color: var(--c-text-muted);">{{ r.cliente_telefono }}</small></td>
                     <td><span class="badge badge-{{ r.estado }}">{{ r.get_estado_display }}</span></td>
@@ -102,10 +126,40 @@
             </tbody>
         </table>
     </div>
-    {% else %}
+</div>
+{% else %}
+<div class="card">
     <div style="text-align: center; padding: 40px; color: var(--c-text-muted);">
         <p style="margin: 0;">No hay reservas con estos filtros.</p>
     </div>
-    {% endif %}
 </div>
+{% endif %}
+
+<style>
+    .res-mobile { display: flex; flex-direction: column; gap: 8px; }
+    .res-desktop { display: none; }
+    @media (min-width: 768px) {
+        .res-mobile { display: none; }
+        .res-desktop { display: block; }
+    }
+    .res-card {
+        background: white; border: 1px solid var(--c-border); border-radius: 11px;
+        padding: 11px 12px; text-decoration: none; color: inherit;
+        display: flex; flex-direction: column; gap: 6px;
+        transition: border-color .15s;
+    }
+    .res-card:hover, .res-card:active { border-color: var(--c-accent); }
+    .res-card-top { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
+    .res-time-pill {
+        font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+        background: var(--c-accent-soft); color: var(--c-accent); white-space: nowrap;
+    }
+    .res-card-name { font-size: 13px; font-weight: 700; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .res-card-monto { font-size: 13px; font-weight: 700; color: var(--c-text); white-space: nowrap; }
+    .res-card-mid { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px dashed var(--c-border); }
+    .res-card-cliente { min-width: 0; flex: 1; }
+    .res-card-cliente strong { font-size: 12px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .res-card-cliente small { font-size: 11px; color: var(--c-text-muted); }
+    .res-card-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+</style>
 {% endblock %}

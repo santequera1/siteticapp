@@ -84,12 +84,34 @@
     {% if total_count %}<span>·</span><span>Prom: <strong>${% widthratio total_monto total_count 1 %}</strong></span>{% endif %}
 </div>
 
-<div class="card">
-    {% if ventas %}
+{% if ventas %}
+<div class="ventas-mobile">
+    {% for v in ventas %}
+    <div class="venta-card">
+        <div class="vc-top">
+            <span class="vc-date">{{ v.fecha|date:"d/m" }} · {{ v.fecha|time:"g:i a" }}</span>
+            <span class="vc-total">${{ v.total|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="vc-items">
+            {% for it in v.items.all|slice:":3" %}
+                <span class="vc-item">{{ it.cantidad }}× {{ it.nombre_snapshot }}</span>
+            {% endfor %}
+            {% if v.items.count > 3 %}<span class="vc-item" style="color: var(--c-text-muted);">+{{ v.items.count|add:"-3" }} más</span>{% endif %}
+        </div>
+        <div class="vc-bottom">
+            <span class="badge badge-confirmada">{{ v.get_metodo_pago_display }}</span>
+            {% if v.comprobante %}<a href="{{ v.comprobante.url }}" target="_blank" style="font-size: 11px; color: var(--c-accent); text-decoration: none;">📷 Comprobante</a>{% endif %}
+            {% if v.reserva %}<a href="{% url 'admin_reserva_detalle' v.reserva.pk %}" style="font-size: 11px; color: var(--c-accent); text-decoration: none;">#{{ v.reserva.pk }} {{ v.reserva.cliente_nombre }}</a>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card ventas-desktop">
     <div class="table-wrap">
         <table class="table">
             <thead>
-                <tr><th>Fecha</th><th>Items</th><th>Método</th><th>Reserva</th><th style="text-align:right;">Total</th></tr>
+                <tr><th>Fecha</th><th>Items</th><th>Método</th><th>Comprob.</th><th>Reserva</th><th style="text-align:right;">Total</th></tr>
             </thead>
             <tbody>
                 {% for v in ventas %}
@@ -101,6 +123,7 @@
                         {% endfor %}
                     </td>
                     <td><span class="badge badge-confirmada">{{ v.get_metodo_pago_display }}</span></td>
+                    <td>{% if v.comprobante %}<a href="{{ v.comprobante.url }}" target="_blank" style="color: var(--c-accent);">Ver</a>{% else %}—{% endif %}</td>
                     <td>
                         {% if v.reserva %}
                         <a href="{% url 'admin_reserva_detalle' v.reserva.pk %}" style="color: var(--c-accent); text-decoration: none;">#{{ v.reserva.pk }}</a>
@@ -114,8 +137,27 @@
         </table>
     </div>
     {% if total_count > 200 %}<p style="padding: 14px; color: var(--c-text-muted); font-size: 11px; text-align: center;">Mostrando 200 de {{ total_count }}. Filtra o exporta a CSV.</p>{% endif %}
-    {% else %}
-    <div style="text-align: center; padding: 40px; color: var(--c-text-muted);">No hay ventas con estos filtros.</div>
-    {% endif %}
 </div>
+{% else %}
+<div class="card"><div style="text-align: center; padding: 40px; color: var(--c-text-muted);">No hay ventas con estos filtros.</div></div>
+{% endif %}
+
+<style>
+    .ventas-mobile { display: flex; flex-direction: column; gap: 7px; }
+    .ventas-desktop { display: none; }
+    @media (min-width: 768px) {
+        .ventas-mobile { display: none; }
+        .ventas-desktop { display: block; }
+    }
+    .venta-card {
+        background: white; border: 1px solid var(--c-border); border-radius: 10px;
+        padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .vc-top { display: flex; justify-content: space-between; align-items: center; }
+    .vc-date { font-size: 11px; color: var(--c-text-muted); font-weight: 600; }
+    .vc-total { font-size: 15px; font-weight: 700; color: var(--c-text); }
+    .vc-items { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 11px; color: var(--c-text); }
+    .vc-item { display: inline-block; }
+    .vc-bottom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 4px; border-top: 1px dashed var(--c-border); }
+</style>
 {% endblock %}

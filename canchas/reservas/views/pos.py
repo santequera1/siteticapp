@@ -89,10 +89,20 @@ def pos(request):
 @staff_member_required(login_url='/admin-panel/login/')
 @require_POST
 def pos_registrar(request):
-    try:
-        payload = json.loads(request.body.decode('utf-8'))
-    except (ValueError, UnicodeDecodeError):
-        return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
+    # Soporta tanto JSON puro como multipart/form-data (para subir comprobante)
+    comprobante_file = None
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        payload_str = request.POST.get('payload', '')
+        try:
+            payload = json.loads(payload_str)
+        except ValueError:
+            return JsonResponse({'ok': False, 'error': 'Payload JSON inválido'}, status=400)
+        comprobante_file = request.FILES.get('comprobante')
+    else:
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+        except (ValueError, UnicodeDecodeError):
+            return JsonResponse({'ok': False, 'error': 'JSON inválido'}, status=400)
 
     items = payload.get('items') or []
     if not items:
@@ -121,6 +131,9 @@ def pos_registrar(request):
                 usuario=request.user if request.user.is_authenticated else None,
                 total=0,
             )
+            if comprobante_file:
+                venta.comprobante = comprobante_file
+                venta.save(update_fields=['comprobante'])
             for item in items:
                 cantidad = int(item.get('cantidad', 1))
                 if cantidad < 1:

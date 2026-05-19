@@ -61,8 +61,29 @@
     </form>
 </div>
 
-<div class="card">
-    {% if guayos %}
+{% if guayos %}
+<div class="guayos-mobile">
+    {% for g in guayos %}
+    <a href="{% url 'admin_guayo_editar' g.pk %}" class="guayo-card">
+        <div class="gc-l">
+            <div class="gc-cod">{{ g.codigo }}</div>
+            <div class="gc-talla">T{{ g.talla }}</div>
+        </div>
+        <div class="gc-m">
+            <div class="gc-color">{{ g.color }}</div>
+            <div class="gc-marca">{{ g.marca|default:"—" }} · ${{ g.precio_alquiler|floatformat:0|intcomma }}</div>
+        </div>
+        <div class="gc-r">
+            {% if g.estado == 'disponible' %}<span class="badge badge-confirmada">Libre</span>
+            {% elif g.estado == 'alquilado' %}<span class="badge badge-pendiente">Alq.</span>
+            {% elif g.estado == 'mantenimiento' %}<span class="badge badge-abono_30">Mant.</span>
+            {% else %}<span class="badge badge-cancelada">Baja</span>{% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<div class="card guayos-desktop">
     <table class="table">
         <thead>
             <tr><th>Código</th><th>Color</th><th>Talla</th><th>Marca</th><th>Estado</th><th>Precio</th><th></th></tr>
@@ -88,10 +109,26 @@
             {% endfor %}
         </tbody>
     </table>
-    {% else %}
-    <div style="text-align: center; padding: 40px; color: var(--c-text-muted);">
-        <p style="margin: 0;">No hay pares con estos filtros.</p>
-    </div>
-    {% endif %}
 </div>
+{% else %}
+<div class="card"><div style="text-align: center; padding: 40px; color: var(--c-text-muted);"><p style="margin: 0;">No hay pares con estos filtros.</p></div></div>
+{% endif %}
+
+<style>
+    .guayos-mobile { display: flex; flex-direction: column; gap: 6px; }
+    .guayos-desktop { display: none; }
+    @media (min-width: 768px) { .guayos-mobile { display: none; } .guayos-desktop { display: block; } }
+    .guayo-card {
+        display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;
+        padding: 9px 12px; background: white; border: 1px solid var(--c-border); border-radius: 10px;
+        text-decoration: none; color: inherit;
+    }
+    .guayo-card:hover { border-color: var(--c-accent); }
+    .gc-l { text-align: center; }
+    .gc-cod { font-size: 12px; font-weight: 700; color: var(--c-text); }
+    .gc-talla { font-size: 11px; color: var(--c-text-muted); font-weight: 600; padding: 2px 6px; border-radius: 5px; background: #f1f5f9; margin-top: 2px; display: inline-block; }
+    .gc-m { min-width: 0; }
+    .gc-color { font-size: 13px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gc-marca { font-size: 11px; color: var(--c-text-muted); }
+</style>
 {% endblock %}

@@ -321,17 +321,30 @@
         /* Mobile sidebar drawer */
         @media (max-width: 1023px) {
             .layout.sidebar-open .sidebar {
-                display: flex; position: fixed; inset: 0 auto 0 0; z-index: 80;
+                display: flex; position: fixed; inset: 0 auto 0 0; z-index: 110;
                 width: 270px; box-shadow: 0 0 40px rgba(0,0,0,.25);
                 animation: slideIn .22s cubic-bezier(.16,.84,.44,1);
+                overflow-y: auto;
             }
             .layout.sidebar-open::before {
                 content: ''; position: fixed; inset: 0;
-                background: rgba(15,23,42,.55); z-index: 70;
+                background: rgba(15,23,42,.55); z-index: 100;
                 animation: fadeIn .22s ease-out;
             }
+            /* Lock body scroll cuando el drawer está abierto */
+            body.drawer-open { overflow: hidden; position: fixed; width: 100%; }
             @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        }
+        /* Botón X de cerrar drawer (sólo visible en mobile) */
+        .drawer-close {
+            display: none; position: absolute; top: 12px; right: 12px;
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--c-border);
+            background: white; cursor: pointer; align-items: center; justify-content: center;
+            color: var(--c-text-muted); padding: 0; z-index: 1;
+        }
+        @media (max-width: 1023px) {
+            .layout.sidebar-open .drawer-close { display: flex; }
         }
     </style>
     {% block extra_head %}{% endblock %}
@@ -339,6 +352,9 @@
 <body>
     <div class="layout" id="layout">
         <aside class="sidebar" id="sidebar">
+            <button class="drawer-close" type="button" aria-label="Cerrar menú" onclick="document.getElementById('layout').classList.remove('sidebar-open'); document.body.classList.remove('drawer-open');">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
             <a href="{% url 'admin_dashboard' %}" class="sidebar-brand">
                 {% if negocio.logo %}
                     <img src="{{ negocio.logo.url }}" alt="Logo">
@@ -422,7 +438,7 @@
         <div class="main">
             <header class="topbar">
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <button class="menu-btn" type="button" aria-label="Abrir menú" onclick="document.getElementById('layout').classList.toggle('sidebar-open');">
+                    <button class="menu-btn" type="button" aria-label="Abrir menú" onclick="document.getElementById('layout').classList.toggle('sidebar-open'); document.body.classList.toggle('drawer-open');">
                         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
                     <h1>{% block page_title %}Dashboard{% endblock %}</h1>
@@ -451,16 +467,25 @@
         (function(){
             var layout = document.getElementById('layout');
             if (!layout) return;
-            // Cerrar drawer al click en backdrop (cualquier click fuera del sidebar)
+            function closeDrawer() {
+                layout.classList.remove('sidebar-open');
+                document.body.classList.remove('drawer-open');
+            }
+            // Cerrar drawer al click en backdrop o link
             document.addEventListener('click', function(e) {
                 if (!layout.classList.contains('sidebar-open')) return;
                 if (e.target.closest('.menu-btn')) return;
-                if (e.target.closest('.sidebar') && !e.target.closest('a')) return;
-                layout.classList.remove('sidebar-open');
+                // si click dentro del sidebar pero NO en un link/botón → no cerrar
+                if (e.target.closest('.sidebar') && !e.target.closest('a') && !e.target.closest('.drawer-close')) return;
+                closeDrawer();
+            });
+            // Tecla ESC
+            document.addEventListener('keydown', function(e){
+                if (e.key === 'Escape' && layout.classList.contains('sidebar-open')) closeDrawer();
             });
             // Cerrar al cambiar a desktop
             window.matchMedia('(min-width: 1024px)').addEventListener('change', function(e){
-                if (e.matches) layout.classList.remove('sidebar-open');
+                if (e.matches) closeDrawer();
             });
         })();
     </script>
