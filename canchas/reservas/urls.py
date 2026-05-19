@@ -39,6 +39,7 @@ urlpatterns = [
     path('admin-panel/reservas/crear/', admin_panel.reserva_admin_crear, name='admin_reserva_crear'),
     path('admin-panel/reservas/<int:pk>/', admin_panel.reserva_admin_detalle, name='admin_reserva_detalle'),
     path('admin-panel/reservas/<int:pk>/eliminar/', admin_panel.reserva_admin_eliminar, name='admin_reserva_eliminar'),
+    path('admin-panel/reservas/<int:pk>/extender/<str:direccion>/', admin_panel.reserva_extender, name='admin_reserva_extender'),
     path('admin-panel/reservas/<int:pk>/pago/<str:nuevo_pago>/', admin_panel.reserva_cambiar_pago, name='admin_reserva_pago'),
     path('admin-panel/reservas/<int:pk>/<str:nuevo_estado>/', admin_panel.reserva_cambiar_estado, name='admin_reserva_estado'),
 

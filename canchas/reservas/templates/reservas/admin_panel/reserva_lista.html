@@ -74,7 +74,10 @@
     {% for r in reservas %}
     <a href="{% url 'admin_reserva_detalle' r.pk %}" class="res-card">
         <div class="res-card-top">
-            <div class="res-time-pill">{{ r.fecha_inicio|time:"g:i a" }}</div>
+            <div class="res-time-pill">
+                <span class="rt-from">{{ r.fecha_inicio|time:"g:i a" }}</span>
+                <span class="rt-to">→ {{ r.fecha_fin|time:"g:i a" }}</span>
+            </div>
             <div class="res-card-name">{{ r.cancha.nombre }}</div>
             <div class="res-card-monto">${{ r.total|floatformat:0|intcomma }}</div>
         </div>
@@ -151,9 +154,12 @@
     .res-card:hover, .res-card:active { border-color: var(--c-accent); }
     .res-card-top { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
     .res-time-pill {
-        font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+        padding: 4px 8px; border-radius: 7px;
         background: var(--c-accent-soft); color: var(--c-accent); white-space: nowrap;
+        display: flex; flex-direction: column; align-items: center; line-height: 1.15;
     }
+    .rt-from { font-size: 11px; font-weight: 700; }
+    .rt-to { font-size: 9px; font-weight: 600; opacity: .8; }
     .res-card-name { font-size: 13px; font-weight: 700; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .res-card-monto { font-size: 13px; font-weight: 700; color: var(--c-text); white-space: nowrap; }
     .res-card-mid { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px dashed var(--c-border); }

@@ -1,9 +1,12 @@
+from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.utils import timezone
+from django.utils.safestring import mark_safe
+from django.urls import reverse
 from datetime import datetime, timedelta
 from reservas.models import Negocio, Cancha, Reserva
 from reservas.forms import NegocioForm, CanchaForm, ReservaAdminForm
@@ -284,6 +287,68 @@ def reserva_cambiar_pago(request, pk, nuevo_pago):
         reserva.estado_pago = nuevo_pago
         reserva.save(update_fields=['estado_pago', 'updated_at'])
         messages.success(request, f'Pago marcado como {reserva.get_estado_pago_display()}.')
+    return redirect('admin_reserva_detalle', pk=pk)
+
+
+@staff_member_required(login_url='/admin-panel/login/')
+def reserva_extender(request, pk, direccion):
+    """Extiende o reduce una reserva 30 minutos.
+
+    direccion: 'mas' o 'menos'.
+    Si es 'mas', verifica conflictos. Si hay conflicto y no se confirma con
+    ?force=1, devuelve mensaje de error con info del conflicto.
+    """
+    reserva = get_object_or_404(Reserva, pk=pk)
+    media_hora = timedelta(minutes=30)
+
+    if direccion == 'menos':
+        # Reducir 30 min — no puede ser menor que 30 min
+        nueva_fin = reserva.fecha_fin - media_hora
+        if (nueva_fin - reserva.fecha_inicio) < media_hora:
+            messages.error(request, 'La reserva no puede durar menos de 30 minutos.')
+            return redirect('admin_reserva_detalle', pk=pk)
+        # Recalcular precio (proporcional)
+        horas_decimal = (nueva_fin - reserva.fecha_inicio).total_seconds() / 3600
+        reserva.fecha_fin = nueva_fin
+        reserva.total = reserva.cancha.precio_por_hora * Decimal(str(horas_decimal))
+        reserva.save(update_fields=['fecha_fin', 'total', 'updated_at'])
+        messages.success(request, f'Reserva acortada a {reserva.fecha_fin.strftime("%I:%M %p").lstrip("0").lower()}.')
+        return redirect('admin_reserva_detalle', pk=pk)
+
+    # direccion == 'mas': extender 30 min
+    nueva_fin = reserva.fecha_fin + media_hora
+    force = request.GET.get('force') == '1'
+
+    # Detectar conflictos (incluyendo canchas vinculadas)
+    canchas_ids = [reserva.cancha.pk] + list(reserva.cancha.bloquea_canchas.values_list('pk', flat=True))
+    conflictos = Reserva.objects.filter(
+        cancha_id__in=canchas_ids,
+        fecha_inicio__lt=nueva_fin,
+        fecha_fin__gt=reserva.fecha_fin,
+    ).exclude(pk=reserva.pk).exclude(estado='cancelada')
+
+    if conflictos.exists() and not force:
+        otra = conflictos.first()
+        url_force = reverse('admin_reserva_extender', kwargs={'pk': pk, 'direccion': 'mas'}) + '?force=1'
+        msg = (
+            f'Hay un conflicto con la reserva #{otra.pk} ({otra.cliente_nombre}, '
+            f'{otra.cancha.nombre} {otra.fecha_inicio.strftime("%I:%M %p").lstrip("0").lower()}). '
+            f'No puedes extender sin resolver el conflicto. '
+            f'Si igual quieres forzar la extensión, '
+            f'<a href="{url_force}" style="color:#fff; text-decoration:underline; font-weight:700;">confirma aquí</a>.'
+        )
+        messages.error(request, mark_safe(msg))
+        return redirect('admin_reserva_detalle', pk=pk)
+
+    # Aplicar extensión
+    horas_decimal = (nueva_fin - reserva.fecha_inicio).total_seconds() / 3600
+    reserva.fecha_fin = nueva_fin
+    reserva.total = reserva.cancha.precio_por_hora * Decimal(str(horas_decimal))
+    reserva.save(update_fields=['fecha_fin', 'total', 'updated_at'])
+    if conflictos.exists():
+        messages.warning(request, f'Reserva extendida 30 min con conflicto forzado. Total ahora ${int(reserva.total):,}.')
+    else:
+        messages.success(request, f'Reserva extendida hasta {reserva.fecha_fin.strftime("%I:%M %p").lstrip("0").lower()}. Total: ${int(reserva.total):,}.')
     return redirect('admin_reserva_detalle', pk=pk)
 
 

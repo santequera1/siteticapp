@@ -142,8 +142,9 @@ class Reserva(models.Model):
             self.fecha_fin = datetime.fromisoformat(self.fecha_fin)
 
         if self.fecha_inicio and self.fecha_fin:
-            if self.fecha_inicio.minute != 0 or self.fecha_fin.minute != 0:
-                raise ValidationError("La hora debe ser en punto (por ejemplo: 10:00, 11:00).")
+            # Permitir minutos 0 o 30 (extensiones de media hora)
+            if self.fecha_inicio.minute not in (0, 30) or self.fecha_fin.minute not in (0, 30):
+                raise ValidationError("La hora debe ser en punto o media hora (ej: 10:00, 10:30).")
 
             if self.fecha_fin <= self.fecha_inicio:
                 raise ValidationError("La fecha fin debe ser posterior a la fecha inicio.")

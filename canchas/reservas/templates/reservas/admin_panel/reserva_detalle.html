@@ -24,11 +24,13 @@
             </div>
             <div>
                 <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Horario</p>
-                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.fecha_inicio|time:"H:i" }} – {{ reserva.fecha_fin|time:"H:i" }}</p>
+                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.fecha_inicio|time:"g:i a" }} – {{ reserva.fecha_fin|time:"g:i a" }}</p>
             </div>
             <div>
                 <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Duración</p>
-                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ reserva.duracion }} hora{{ reserva.duracion|pluralize:"s" }}</p>
+                {% with mins=reserva.fecha_fin|timeuntil:reserva.fecha_inicio %}
+                <p style="font-size: 14px; font-weight: 600; margin: 2px 0 0;">{{ mins }}</p>
+                {% endwith %}
             </div>
             <div>
                 <p style="font-size: 11px; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0;">Cliente</p>
@@ -60,6 +62,21 @@
                 Creada: {{ reserva.created_at|date:"d M Y H:i" }}
             </p>
             <span style="font-size: 24px; font-weight: 700; color: var(--c-accent);">${{ reserva.total|floatformat:0|intcomma }}</span>
+        </div>
+    </div>
+
+    <div class="card card-padded" style="margin-bottom: 14px;">
+        <h3 style="margin: 0 0 4px; font-size: 14px; font-weight: 700;">Modificar duración</h3>
+        <p style="margin: 0 0 12px; font-size: 12px; color: var(--c-text-muted);">Extiende o reduce 30 minutos. Si extender choca con otra reserva, te avisaremos.</p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="{% url 'admin_reserva_extender' reserva.pk 'mas' %}" class="btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Añadir 30 min
+            </a>
+            <a href="{% url 'admin_reserva_extender' reserva.pk 'menos' %}" class="btn-ghost" style="display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('¿Reducir la reserva 30 minutos?');">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
+                Quitar 30 min
+            </a>
         </div>
     </div>
 

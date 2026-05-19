@@ -63,7 +63,10 @@
         <div style="display: flex; flex-direction: column; gap: 6px;">
             {% for r in proximas %}
             <a href="{% url 'admin_reserva_detalle' r.pk %}" class="prox-row">
-                <div class="prox-time">{{ r.fecha_inicio|time:"g:i a" }}</div>
+                <div class="prox-time">
+                    <div class="prox-time-from">{{ r.fecha_inicio|time:"g:i a" }}</div>
+                    <div class="prox-time-to">→ {{ r.fecha_fin|time:"g:i a" }}</div>
+                </div>
                 <div class="prox-info">
                     <div class="prox-cancha">{{ r.cancha.nombre }}</div>
                     <div class="prox-meta">{{ r.cliente_nombre }} · {{ r.fecha_inicio|date:"d M" }}</div>
@@ -125,9 +128,12 @@
     }
     .prox-row:hover { border-color: var(--c-accent); background: var(--c-accent-soft); }
     .prox-time {
-        font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: 7px;
+        padding: 5px 9px; border-radius: 7px;
         background: var(--c-accent-soft); color: var(--c-accent); white-space: nowrap;
+        text-align: center; line-height: 1.15; min-width: 70px;
     }
+    .prox-time-from { font-size: 12px; font-weight: 700; }
+    .prox-time-to { font-size: 10px; font-weight: 600; opacity: .8; }
     .prox-info { min-width: 0; }
     .prox-cancha { font-size: 13px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .prox-meta { font-size: 11px; color: var(--c-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
