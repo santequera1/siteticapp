@@ -1,0 +1,55 @@
+{% extends 'reservas/base_admin.html' %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 560px; margin: 0 auto;">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+        <a href="{% url 'admin_guayos' %}" class="btn-ghost" style="padding: 6px 12px;">← Volver</a>
+        <h2 style="margin: 0; font-size: 18px;">{{ titulo }}</h2>
+    </div>
+
+    <form method="post" class="card card-padded" style="display: grid; gap: 14px;">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Código *</label>
+                {{ form.codigo }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Talla *</label>
+                {{ form.talla }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Color *</label>
+                {{ form.color }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Marca</label>
+                {{ form.marca }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Estado</label>
+                {{ form.estado }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Precio alquiler</label>
+                {{ form.precio_alquiler }}
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Nota</label>
+                {{ form.nota }}
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center;">
+            {% if guayo %}
+            <a href="{% url 'admin_guayo_eliminar' guayo.pk %}" class="btn-danger" style="padding: 7px 12px; font-size: 12px;">Eliminar</a>
+            {% else %}<span></span>{% endif %}
+            <div style="display: flex; gap: 8px;">
+                <a href="{% url 'admin_guayos' %}" class="btn-ghost">Cancelar</a>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'reservas/base_admin.html' %}
+{% load humanize %}
+{% block page_title %}Alquileres de guayos{% endblock %}
+
+{% block content %}
+<div class="section-h" style="margin-bottom: 18px;">
+    <div>
+        <h2 style="margin: 0;">Alquileres de guayos</h2>
+        <p style="font-size: 13px; color: var(--c-text-muted); margin: 4px 0 0;">{{ activos_count }} activo{{ activos_count|pluralize:"s" }} · {{ devueltos_count }} devuelto{{ devueltos_count|pluralize:"s" }}.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="{% url 'admin_guayos' %}" class="btn-ghost">Inventario</a>
+        <a href="{% url 'admin_alquilar_guayo' %}" class="btn-primary">+ Alquilar par</a>
+    </div>
+</div>
+
+<div class="card card-padded" style="margin-bottom: 14px;">
+    <form method="get" style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <a href="?estado=activo" class="btn-ghost {% if filtro_estado == 'activo' %}is-active{% endif %}" style="padding: 7px 14px; {% if filtro_estado == 'activo' %}background: var(--c-text); color: white; border-color: var(--c-text);{% endif %}">Activos</a>
+        <a href="?estado=devuelto" class="btn-ghost" style="padding: 7px 14px; {% if filtro_estado == 'devuelto' %}background: var(--c-text); color: white; border-color: var(--c-text);{% endif %}">Devueltos</a>
+        <a href="?estado=perdido" class="btn-ghost" style="padding: 7px 14px; {% if filtro_estado == 'perdido' %}background: var(--c-text); color: white; border-color: var(--c-text);{% endif %}">No devueltos</a>
+        <a href="?estado=" class="btn-ghost" style="padding: 7px 14px; {% if not filtro_estado %}background: var(--c-text); color: white; border-color: var(--c-text);{% endif %}">Todos</a>
+    </form>
+</div>
+
+<div class="card">
+    {% if alquileres %}
+    <table class="table">
+        <thead>
+            <tr><th>Par</th><th>Cliente</th><th>Cancha / Reserva</th><th>Fecha alquiler</th><th>Estado</th><th>Precio</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for a in alquileres %}
+            <tr class="table-row">
+                <td><strong>{{ a.guayo.codigo }}</strong><br><small style="color: var(--c-text-muted);">{{ a.guayo.color }} · T{{ a.guayo.talla }}</small></td>
+                <td>{{ a.cliente_nombre }}<br><small style="color: var(--c-text-muted);">{{ a.cliente_telefono|default:'—' }}{% if a.cliente_documento %} · CC: {{ a.cliente_documento }}{% endif %}</small></td>
+                <td>
+                    {% if a.reserva %}<a href="{% url 'admin_reserva_detalle' a.reserva.pk %}" style="color: var(--c-accent);">#{{ a.reserva.pk }}</a>{% endif %}
+                    {% if a.cancha %}<br><small style="color: var(--c-text-muted);">{{ a.cancha.nombre }}</small>{% endif %}
+                    {% if not a.reserva and not a.cancha %}—{% endif %}
+                </td>
+                <td>{{ a.fecha_alquiler|date:"d/m H:i" }}{% if a.fecha_devolucion %}<br><small style="color: var(--c-text-muted);">devuelto {{ a.fecha_devolucion|date:"d/m H:i" }}</small>{% endif %}</td>
+                <td>
+                    {% if a.estado == 'activo' %}<span class="badge badge-pendiente">Activo</span>
+                    {% elif a.estado == 'devuelto' %}<span class="badge badge-confirmada">Devuelto</span>
+                    {% else %}<span class="badge badge-cancelada">No devuelto</span>{% endif %}
+                </td>
+                <td>${{ a.precio|floatformat:0|intcomma }}</td>
+                <td style="text-align: right; white-space: nowrap;">
+                    {% if a.estado == 'activo' %}
+                    <a href="{% url 'admin_alquiler_guayo_devolver' a.pk %}" class="btn-primary" style="padding: 5px 10px; font-size: 12px;">Devolver</a>
+                    <a href="{% url 'admin_alquiler_guayo_perdido' a.pk %}" class="btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="return confirm('¿Marcar este par como NO devuelto? El guayo quedará dado de baja.');">No devuelto</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: var(--c-text-muted);">
+        <p style="margin: 0;">No hay alquileres con este filtro.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

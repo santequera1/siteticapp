@@ -1,0 +1,97 @@
+{% extends 'reservas/base_admin.html' %}
+{% load humanize %}
+{% block page_title %}Guayos · Inventario{% endblock %}
+
+{% block content %}
+<div class="section-h" style="margin-bottom: 18px;">
+    <div>
+        <h2 style="margin: 0;">Inventario de guayos</h2>
+        <p style="font-size: 13px; color: var(--c-text-muted); margin: 4px 0 0;">{{ stats.total }} pares en total.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="{% url 'admin_alquileres_guayos' %}" class="btn-ghost">Ver alquileres</a>
+        <a href="{% url 'admin_guayo_crear' %}" class="btn-primary">+ Agregar par</a>
+    </div>
+</div>
+
+<div class="kpi-grid" style="margin-bottom: 16px;">
+    <div class="stat-card">
+        <div class="stat-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+        <div><p class="stat-num">{{ stats.disponibles }}</p><p class="stat-lab">Disponibles</p></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        <div><p class="stat-num">{{ stats.alquilados }}</p><p class="stat-lab">Alquilados</p></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 00.3 1.8"/></svg></div>
+        <div><p class="stat-num">{{ stats.mantenimiento }}</p><p class="stat-lab">Mantenimiento</p></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon slate"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0v10l-8 4-8-4V7"/></svg></div>
+        <div><p class="stat-num">{{ stats.total }}</p><p class="stat-lab">Total inventario</p></div>
+    </div>
+</div>
+
+<div class="card card-padded" style="margin-bottom: 14px;">
+    <form method="get" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: end;">
+        <div style="flex: 1; min-width: 140px;">
+            <label style="display: block; font-size: 11px; font-weight: 600; color: var(--c-text); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em;">Estado</label>
+            <select name="estado" class="form-select">
+                <option value="">Todos</option>
+                <option value="disponible" {% if filtro_estado == 'disponible' %}selected{% endif %}>Disponible</option>
+                <option value="alquilado" {% if filtro_estado == 'alquilado' %}selected{% endif %}>Alquilado</option>
+                <option value="mantenimiento" {% if filtro_estado == 'mantenimiento' %}selected{% endif %}>Mantenimiento</option>
+                <option value="dado_baja" {% if filtro_estado == 'dado_baja' %}selected{% endif %}>Dado de baja</option>
+            </select>
+        </div>
+        <div style="flex: 1; min-width: 100px;">
+            <label style="display: block; font-size: 11px; font-weight: 600; color: var(--c-text); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em;">Talla</label>
+            <select name="talla" class="form-select">
+                <option value="">Todas</option>
+                {% for t in tallas %}<option value="{{ t }}" {% if filtro_talla == t|stringformat:"s" %}selected{% endif %}>T{{ t }}</option>{% endfor %}
+            </select>
+        </div>
+        <div style="flex: 2; min-width: 200px;">
+            <label style="display: block; font-size: 11px; font-weight: 600; color: var(--c-text); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em;">Buscar</label>
+            <input type="text" name="q" class="form-input" placeholder="Código, color o marca" value="{{ filtro_q }}">
+        </div>
+        <button type="submit" class="btn-primary">Filtrar</button>
+        {% if filtro_estado or filtro_talla or filtro_q %}<a href="{% url 'admin_guayos' %}" class="btn-ghost">Limpiar</a>{% endif %}
+    </form>
+</div>
+
+<div class="card">
+    {% if guayos %}
+    <table class="table">
+        <thead>
+            <tr><th>Código</th><th>Color</th><th>Talla</th><th>Marca</th><th>Estado</th><th>Precio</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for g in guayos %}
+            <tr class="table-row">
+                <td><strong>{{ g.codigo }}</strong></td>
+                <td>{{ g.color }}</td>
+                <td>T{{ g.talla }}</td>
+                <td>{{ g.marca|default:"—" }}</td>
+                <td>
+                    {% if g.estado == 'disponible' %}<span class="badge badge-confirmada">Disponible</span>
+                    {% elif g.estado == 'alquilado' %}<span class="badge badge-pendiente">Alquilado</span>
+                    {% elif g.estado == 'mantenimiento' %}<span class="badge badge-abono_30">Mantenimiento</span>
+                    {% else %}<span class="badge badge-cancelada">Dado de baja</span>{% endif %}
+                </td>
+                <td>${{ g.precio_alquiler|floatformat:0|intcomma }}</td>
+                <td style="text-align: right;">
+                    <a href="{% url 'admin_guayo_editar' g.pk %}" class="btn-ghost" style="padding: 5px 10px; font-size: 12px;">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: var(--c-text-muted);">
+        <p style="margin: 0;">No hay pares con estos filtros.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

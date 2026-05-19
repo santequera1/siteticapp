@@ -300,6 +300,16 @@
                     Reportes
                 </a>
 
+                <div class="sidebar-section">Alquiler de guayos</div>
+                <a href="{% url 'admin_alquileres_guayos' %}" class="sidebar-link {% if 'alquiler' in request.resolver_match.url_name or request.resolver_match.url_name == 'admin_alquilar_guayo' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14V8a4 4 0 014-4h0a4 4 0 014 4v6M5 14h14l-1 6H6L5 14z"/></svg>
+                    Alquileres
+                </a>
+                <a href="{% url 'admin_guayos' %}" class="sidebar-link {% if 'guayo' in request.resolver_match.url_name and 'alquiler' not in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0v10l-8 4-8-4V7m16 0l-8 4m0 0L4 7m8 4v10"/></svg>
+                    Inventario guayos
+                </a>
+
                 <div class="sidebar-section">Configuración</div>
                 <a href="{% url 'admin_canchas' %}" class="sidebar-link {% if 'cancha' in request.resolver_match.url_name %}active{% endif %}">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2"/></svg>

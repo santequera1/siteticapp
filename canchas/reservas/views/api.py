@@ -118,17 +118,27 @@ def _court_hours(cancha):
     return apertura, cierre_h
 
 
+def _canchas_bloqueadas_ids(cancha):
+    """Lista de IDs de la cancha + todas las que comparten espacio físico."""
+    ids = [cancha.pk]
+    ids.extend(cancha.bloquea_canchas.values_list('pk', flat=True))
+    return ids
+
+
 def _occupied_hours_offset(cancha, fecha, apertura, cierre_h):
     """Devuelve un set de offsets de hora (relativos a medianoche del día) ocupados.
 
-    Considera reservas que empiezan ese día, reservas que empezaron el día anterior
-    y se extienden a la madrugada de este, y reservas recurrentes que apliquen.
+    Considera reservas en ESTA cancha y en canchas que comparten espacio físico
+    (ej: la F-9 son las dos F-7 unidas). También considera reservas que cruzan
+    medianoche y reservas recurrentes activas.
     """
     inicio_ventana = timezone.make_aware(datetime.combine(fecha, time.min))
     fin_ventana = inicio_ventana + timedelta(hours=cierre_h)
 
+    canchas_ids = _canchas_bloqueadas_ids(cancha)
+
     reservas = Reserva.objects.filter(
-        cancha=cancha,
+        cancha_id__in=canchas_ids,
         fecha_inicio__lt=fin_ventana,
         fecha_fin__gt=inicio_ventana,
     ).exclude(estado='cancelada')
@@ -144,9 +154,9 @@ def _occupied_hours_offset(cancha, fecha, apertura, cierre_h):
         for h in range(offset_inicio, offset_fin):
             occupied.add(h)
 
-    # Recurrentes activas que apliquen al día/cancha
+    # Recurrentes activas que apliquen al día/cancha o canchas asociadas
     recurrentes = ReservaRecurrente.objects.filter(
-        cancha=cancha,
+        cancha_id__in=canchas_ids,
         estado='activa',
         dia_semana=fecha.weekday(),
         fecha_desde__lte=fecha,
@@ -161,9 +171,10 @@ def _occupied_hours_offset(cancha, fecha, apertura, cierre_h):
 
 
 def _hay_conflicto_recurrente(cancha, fecha, hora_offset, duracion):
-    """True si una recurrente activa choca con [hora_offset, hora_offset+duracion) en esa fecha."""
+    """True si una recurrente activa (en esta cancha o en una vinculada) choca con [hora_offset, hora_offset+duracion)."""
+    canchas_ids = _canchas_bloqueadas_ids(cancha)
     recurrentes = ReservaRecurrente.objects.filter(
-        cancha=cancha,
+        cancha_id__in=canchas_ids,
         estado='activa',
         dia_semana=fecha.weekday(),
         fecha_desde__lte=fecha,
@@ -326,10 +337,12 @@ def booking_create(request):
     if fecha_inicio < timezone.now():
         return JsonResponse({'ok': False, 'error': 'No puedes reservar en el pasado'}, status=400)
 
+    canchas_ids = _canchas_bloqueadas_ids(cancha)
+
     try:
         with transaction.atomic():
             conflicto = Reserva.objects.select_for_update().filter(
-                cancha=cancha,
+                cancha_id__in=canchas_ids,
                 fecha_inicio__lt=fecha_fin,
                 fecha_fin__gt=fecha_inicio,
             ).exclude(estado='cancelada').exists()

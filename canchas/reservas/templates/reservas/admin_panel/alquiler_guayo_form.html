@@ -1,0 +1,74 @@
+{% extends 'reservas/base_admin.html' %}
+{% block page_title %}Alquilar par de guayos{% endblock %}
+
+{% block content %}
+<div style="max-width: 620px; margin: 0 auto;">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+        <a href="{% url 'admin_alquileres_guayos' %}" class="btn-ghost" style="padding: 6px 12px;">← Volver</a>
+        <h2 style="margin: 0; font-size: 18px;">Alquilar par de guayos</h2>
+    </div>
+
+    <form method="post" class="card card-padded" style="display: grid; gap: 14px;">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="flash flash-error">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div>
+            <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Par de guayos *</label>
+            {{ form.guayo }}
+            <small style="color: var(--c-text-muted); font-size: 11px;">Solo se muestran los disponibles.</small>
+            {% if form.guayo.errors %}<p style="font-size: 12px; color: var(--c-danger);">{{ form.guayo.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Nombre cliente *</label>
+                {{ form.cliente_nombre }}
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Teléfono</label>
+                {{ form.cliente_telefono }}
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Documento (cédula como garantía)</label>
+                {{ form.cliente_documento }}
+            </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--c-border); margin: 4px 0;">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Reserva asociada (opcional)</label>
+                {{ form.reserva }}
+                <small style="color: var(--c-text-muted); font-size: 11px;">Si seleccionas reserva, se asocia la cancha automáticamente.</small>
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Cancha (opcional)</label>
+                {{ form.cancha }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Precio *</label>
+                {{ form.precio }}
+                <small style="color: var(--c-text-muted); font-size: 11px;">Dejar 0 para usar el precio del par.</small>
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Método de pago</label>
+                {{ form.metodo_pago }}
+            </div>
+        </div>
+
+        <div>
+            <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">Nota</label>
+            {{ form.nota }}
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <a href="{% url 'admin_alquileres_guayos' %}" class="btn-ghost">Cancelar</a>
+            <button type="submit" class="btn-primary">Registrar alquiler</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

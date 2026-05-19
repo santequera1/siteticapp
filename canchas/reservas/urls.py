@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import client, admin_panel, api, recurrentes, pos
+from .views import client, admin_panel, api, recurrentes, pos, guayos
 
 urlpatterns = [
     # =================== CLIENTE ===================
@@ -66,6 +66,18 @@ urlpatterns = [
 
     # Reportes
     path('admin-panel/reportes/', pos.reportes, name='admin_reportes'),
+
+    # Guayos — inventario
+    path('admin-panel/guayos/', guayos.lista, name='admin_guayos'),
+    path('admin-panel/guayos/crear/', guayos.crear, name='admin_guayo_crear'),
+    path('admin-panel/guayos/<int:pk>/editar/', guayos.editar, name='admin_guayo_editar'),
+    path('admin-panel/guayos/<int:pk>/eliminar/', guayos.eliminar, name='admin_guayo_eliminar'),
+
+    # Guayos — alquileres
+    path('admin-panel/guayos/alquileres/', guayos.alquileres, name='admin_alquileres_guayos'),
+    path('admin-panel/guayos/alquilar/', guayos.alquilar, name='admin_alquilar_guayo'),
+    path('admin-panel/guayos/alquileres/<int:pk>/devolver/', guayos.devolver, name='admin_alquiler_guayo_devolver'),
+    path('admin-panel/guayos/alquileres/<int:pk>/perdido/', guayos.marcar_perdido, name='admin_alquiler_guayo_perdido'),
 
     # =================== API ===================
     path('api/reservas/', api.obtener_reservas, name='api_reservas'),

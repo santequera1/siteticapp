@@ -61,6 +61,10 @@ class Cancha(models.Model):
     horario_cierre = models.TimeField(default='22:00')
     es_techada = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    bloquea_canchas = models.ManyToManyField(
+        'self', blank=True, symmetrical=True,
+        help_text='Canchas que ocupan el mismo espacio físico (ej: la F-9 son las dos F-7 unidas).'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -338,3 +342,84 @@ class VentaItem(models.Model):
 
     def __str__(self):
         return f"{self.nombre_snapshot} x{self.cantidad}"
+
+
+# =====================================================================
+# Alquiler de guayos
+# =====================================================================
+
+ESTADO_GUAYO_CHOICES = [
+    ('disponible', 'Disponible'),
+    ('alquilado', 'Alquilado'),
+    ('mantenimiento', 'En mantenimiento'),
+    ('dado_baja', 'Dado de baja'),
+]
+
+
+class Guayo(models.Model):
+    """Par de guayos del inventario para alquiler."""
+    codigo = models.CharField(max_length=30, unique=True, help_text='Código interno para identificar el par')
+    color = models.CharField(max_length=40)
+    talla = models.PositiveIntegerField(help_text='Talla CO (ej: 38, 40, 42)')
+    marca = models.CharField(max_length=60, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_GUAYO_CHOICES, default='disponible')
+    precio_alquiler = models.DecimalField(max_digits=10, decimal_places=2, default=15000)
+    nota = models.CharField(max_length=200, blank=True, help_text='Detalles, daños, observaciones')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Guayo'
+        verbose_name_plural = 'Guayos'
+        ordering = ['talla', 'color']
+
+    def __str__(self):
+        return f"#{self.codigo} · {self.color} T{self.talla}"
+
+
+ESTADO_ALQUILER_CHOICES = [
+    ('activo', 'Activo'),
+    ('devuelto', 'Devuelto'),
+    ('perdido', 'No devuelto'),
+]
+
+
+class AlquilerGuayo(models.Model):
+    """Alquiler de un par de guayos a un cliente."""
+    guayo = models.ForeignKey(Guayo, on_delete=models.PROTECT, related_name='alquileres')
+
+    cliente_nombre = models.CharField(max_length=255)
+    cliente_telefono = models.CharField(max_length=20, blank=True)
+    cliente_documento = models.CharField(max_length=30, blank=True, help_text='Cédula / documento de garantía')
+
+    cancha = models.ForeignKey(Cancha, on_delete=models.SET_NULL, null=True, blank=True)
+    reserva = models.ForeignKey(Reserva, on_delete=models.SET_NULL, null=True, blank=True, related_name='alquileres_guayos')
+
+    fecha_alquiler = models.DateTimeField(auto_now_add=True)
+    fecha_devolucion = models.DateTimeField(null=True, blank=True)
+
+    precio = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_VENTA, default='efectivo')
+    estado = models.CharField(max_length=15, choices=ESTADO_ALQUILER_CHOICES, default='activo')
+    nota = models.TextField(blank=True)
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='alquileres_guayos_registrados'
+    )
+
+    class Meta:
+        verbose_name = 'Alquiler de guayos'
+        verbose_name_plural = 'Alquileres de guayos'
+        ordering = ['-fecha_alquiler']
+
+    def __str__(self):
+        return f"Alquiler #{self.pk} · {self.guayo} · {self.cliente_nombre}"
+
+    def marcar_devuelto(self):
+        from django.utils import timezone as _tz
+        self.estado = 'devuelto'
+        self.fecha_devolucion = _tz.now()
+        self.save(update_fields=['estado', 'fecha_devolucion'])
+        if self.guayo.estado == 'alquilado':
+            self.guayo.estado = 'disponible'
+            self.guayo.save(update_fields=['estado'])

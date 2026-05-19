@@ -1,5 +1,5 @@
 from django import forms
-from .models import Negocio, Cancha, Reserva, ReservaRecurrente, Producto
+from .models import Negocio, Cancha, Reserva, ReservaRecurrente, Producto, Guayo, AlquilerGuayo
 
 
 class NegocioForm(forms.ModelForm):
@@ -102,6 +102,56 @@ class ReservaRecurrenteForm(forms.ModelForm):
         if fd and fh and fh < fd:
             raise forms.ValidationError("La fecha 'hasta' debe ser posterior a la fecha 'desde'.")
         return cleaned
+
+
+class GuayoForm(forms.ModelForm):
+    class Meta:
+        model = Guayo
+        fields = ['codigo', 'color', 'talla', 'marca', 'estado', 'precio_alquiler', 'nota']
+        widgets = {
+            'codigo': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ej: G-01'}),
+            'color': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Negro, Rojo, Blanco con verde…'}),
+            'talla': forms.NumberInput(attrs={'class': 'form-input', 'min': 28, 'max': 48}),
+            'marca': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Opcional'}),
+            'estado': forms.Select(attrs={'class': 'form-input'}),
+            'precio_alquiler': forms.NumberInput(attrs={'class': 'form-input', 'step': '500'}),
+            'nota': forms.TextInput(attrs={'class': 'form-input'}),
+        }
+
+
+class AlquilerGuayoForm(forms.ModelForm):
+    class Meta:
+        model = AlquilerGuayo
+        fields = ['guayo', 'cliente_nombre', 'cliente_telefono', 'cliente_documento',
+                  'cancha', 'reserva', 'precio', 'metodo_pago', 'nota']
+        widgets = {
+            'guayo': forms.Select(attrs={'class': 'form-input'}),
+            'cliente_nombre': forms.TextInput(attrs={'class': 'form-input'}),
+            'cliente_telefono': forms.TextInput(attrs={'class': 'form-input'}),
+            'cliente_documento': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Cédula como garantía'}),
+            'cancha': forms.Select(attrs={'class': 'form-input'}),
+            'reserva': forms.Select(attrs={'class': 'form-input'}),
+            'precio': forms.NumberInput(attrs={'class': 'form-input', 'step': '500'}),
+            'metodo_pago': forms.Select(attrs={'class': 'form-input'}),
+            'nota': forms.Textarea(attrs={'class': 'form-input', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Solo guayos disponibles (excepto el actual si estamos editando)
+        qs = Guayo.objects.filter(estado='disponible')
+        if self.instance.pk and self.instance.guayo_id:
+            qs = Guayo.objects.filter(pk=self.instance.guayo_id) | qs
+        self.fields['guayo'].queryset = qs.distinct()
+        # Limitar reservas a hoy y futuro
+        from django.utils import timezone as _tz
+        from datetime import timedelta as _td
+        hoy_min = _tz.now() - _td(hours=4)
+        self.fields['reserva'].queryset = Reserva.objects.filter(
+            fecha_inicio__gte=hoy_min,
+        ).exclude(estado='cancelada').order_by('fecha_inicio')[:30]
+        self.fields['reserva'].required = False
+        self.fields['cancha'].required = False
 
 
 class ProductoForm(forms.ModelForm):
