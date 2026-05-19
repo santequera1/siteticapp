@@ -74,6 +74,8 @@
         .topbar-links a:hover { background: #f1f5f9; color: var(--c-text); }
         .topbar-links a.active { background: var(--c-accent-soft); color: var(--c-accent); }
         @media (min-width: 768px) { .topbar-links { display: flex; } }
+        .admin-btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; color: var(--c-text-muted); background: white; border: 1px solid var(--c-border); transition: all .15s; }
+        .admin-btn:hover { color: var(--c-accent); border-color: var(--c-accent); background: var(--c-accent-soft); }
 
         /* ============ Bottom nav (mobile) ============ */
         .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; background: white; border-top: 1px solid var(--c-border); display: flex; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
@@ -103,10 +105,15 @@
                 {% endif %}
                 <span>{{ negocio.nombre|default:"Centro Deportivo" }}</span>
             </a>
-            <div class="topbar-links">
-                <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Reservar</a>
-                <a href="{% url 'cancha_lista' %}" class="{% if request.resolver_match.url_name == 'cancha_lista' %}active{% endif %}">Canchas</a>
-                <a href="{% url 'historial' %}" class="{% if request.resolver_match.url_name == 'historial' %}active{% endif %}">Mis reservas</a>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <div class="topbar-links">
+                    <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Reservar</a>
+                    <a href="{% url 'cancha_lista' %}" class="{% if request.resolver_match.url_name == 'cancha_lista' %}active{% endif %}">Canchas</a>
+                    <a href="{% url 'historial' %}" class="{% if request.resolver_match.url_name == 'historial' %}active{% endif %}">Mis reservas</a>
+                </div>
+                <a href="{% url 'admin_dashboard' %}" class="admin-btn" title="Panel administrador" aria-label="Panel administrador">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                </a>
             </div>
         </div>
     </nav>

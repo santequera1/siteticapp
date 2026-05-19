@@ -4,45 +4,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
+    <title>Acceso · {{ negocio.nombre|default:"Centro Deportivo" }}</title>
     <link rel="stylesheet" href="{% static 'css/output.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>* { font-family: 'Inter', sans-serif; } .form-input { width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px; } .form-input:focus { outline: none; border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }</style>
+    <style>
+        :root {
+            --c-accent: #16a34a;
+            --c-accent-hover: #15803d;
+            --c-text: #0f172a;
+            --c-text-muted: #64748b;
+            --c-border: #e2e8f0;
+            --c-danger: #dc2626;
+        }
+        * { font-family: 'Inter', system-ui, sans-serif; box-sizing: border-box; }
+        body { margin: 0; background: #0f172a; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .login-card { background: white; border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 380px; box-shadow: 0 10px 40px rgba(0,0,0,.2); }
+        .login-brand { display: flex; flex-direction: column; align-items: center; margin-bottom: 24px; }
+        .login-brand img { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+        .login-brand h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; color: var(--c-text); text-align: center; }
+        .login-brand p { font-size: 13px; color: var(--c-text-muted); margin: 0; }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: 13px; font-weight: 600; color: var(--c-text); margin-bottom: 6px; }
+        .field input { width: 100%; padding: 11px 14px; border: 1px solid var(--c-border); border-radius: 10px; font-size: 15px; font-family: inherit; transition: all .15s; }
+        .field input:focus { outline: none; border-color: var(--c-accent); box-shadow: 0 0 0 3px rgba(22,163,74,.12); }
+        .field .pwd-wrap { position: relative; }
+        .field .pwd-wrap input { padding-right: 44px; }
+        .field .pwd-toggle {
+            position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+            background: transparent; border: none; cursor: pointer; padding: 8px;
+            color: var(--c-text-muted); display: flex; align-items: center; justify-content: center;
+            border-radius: 6px;
+        }
+        .field .pwd-toggle:hover { color: var(--c-text); background: #f1f5f9; }
+        .btn-login {
+            width: 100%; background: var(--c-accent); color: white; border: none;
+            padding: 13px; border-radius: 10px; font-weight: 600; font-size: 15px;
+            cursor: pointer; font-family: inherit; transition: background .15s;
+        }
+        .btn-login:hover { background: var(--c-accent-hover); }
+        .alert { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; }
+        .footer-link { text-align: center; margin-top: 18px; font-size: 13px; color: var(--c-text-muted); }
+        .footer-link a { color: var(--c-text-muted); text-decoration: none; }
+        .footer-link a:hover { color: var(--c-accent); }
+    </style>
 </head>
-<body class="bg-gray-900 min-h-screen flex items-center justify-center px-4">
-    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
-        <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-800">Panel Admin</h1>
-            <p class="text-gray-500 text-sm mt-1">Ingresa tus credenciales</p>
+<body>
+    <div class="login-card">
+        <div class="login-brand">
+            {% if negocio.logo %}
+                <img src="{{ negocio.logo.url }}" alt="Logo">
+            {% else %}
+                <img src="{% static 'img/logo.webp' %}" alt="Logo">
+            {% endif %}
+            <h1>{{ negocio.nombre|default:"Centro Deportivo" }}</h1>
+            <p>Panel de administración</p>
         </div>
 
         {% if messages %}
         {% for message in messages %}
-        <div class="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">{{ message }}</div>
+        <div class="alert">{{ message }}</div>
         {% endfor %}
         {% endif %}
 
-        <form method="post">
+        <form method="post" autocomplete="on">
             {% csrf_token %}
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
-                    <input type="text" name="username" class="form-input" required autofocus>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Contrasena</label>
-                    <input type="password" name="password" class="form-input" required>
-                </div>
-                <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition">Ingresar</button>
+            <div class="field">
+                <label for="id_username">Usuario</label>
+                <input type="text" id="id_username" name="username" required autofocus autocapitalize="none" autocomplete="username">
             </div>
+            <div class="field">
+                <label for="id_password">Contraseña</label>
+                <div class="pwd-wrap">
+                    <input type="password" id="id_password" name="password" required autocomplete="current-password">
+                    <button type="button" class="pwd-toggle" id="togglePwd" aria-label="Mostrar contraseña" title="Mostrar/ocultar contraseña">
+                        <svg id="iconEye" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="btn-login">Ingresar</button>
         </form>
 
-        <p class="text-center text-sm text-gray-400 mt-6">
-            <a href="{% url 'home' %}" class="hover:text-green-600">Volver al sitio</a>
-        </p>
+        <div class="footer-link">
+            <a href="{% url 'home' %}">← Volver al sitio</a>
+        </div>
     </div>
+
+    <script>
+        (function() {
+            var btn = document.getElementById('togglePwd');
+            var input = document.getElementById('id_password');
+            var icon = document.getElementById('iconEye');
+            var EYE = '<path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/>';
+            var EYE_OFF = '<path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.6 5.1A11 11 0 0112 5c6 0 9.5 7 9.5 7-.8 1.6-1.9 3.1-3.2 4.3M6.7 6.7C4.4 8.3 2.5 12 2.5 12s3.5 7 9.5 7c1.8 0 3.5-.6 4.9-1.5M9.9 9.9a3 3 0 004.2 4.2"/>';
+            btn.addEventListener('click', function() {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.innerHTML = EYE_OFF;
+                    btn.setAttribute('aria-label', 'Ocultar contraseña');
+                } else {
+                    input.type = 'password';
+                    icon.innerHTML = EYE;
+                    btn.setAttribute('aria-label', 'Mostrar contraseña');
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

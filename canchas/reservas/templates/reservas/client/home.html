@@ -68,15 +68,19 @@
     .court-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
     @media (min-width: 720px) { .court-list { grid-template-columns: repeat(2, 1fr); } }
     .court-card {
-        display: flex; gap: 0; background: white; border: 2px solid var(--c-border); border-radius: 16px;
+        display: flex; flex-direction: column; gap: 0; background: white; border: 2px solid var(--c-border); border-radius: 16px;
         cursor: pointer; transition: all .15s; overflow: hidden; user-select: none;
-        text-align: left; padding: 0; font-family: inherit; width: 100%; min-height: 110px;
+        text-align: left; padding: 0; font-family: inherit; width: 100%;
     }
     .court-card:active { transform: scale(.99); }
     .court-card.selected { border-color: var(--c-accent); background: var(--c-accent-soft); box-shadow: 0 0 0 3px rgba(22,163,74,.12); }
-    .court-card .cc-img { width: 165px; flex-shrink: 0; background-color: #e2e8f0; background-size: cover; background-position: center; }
+    .court-card .cc-img { width: 100%; height: 160px; flex-shrink: 0; background-color: #e2e8f0; background-size: cover; background-position: center; }
     .court-card .cc-img.empty { display: flex; align-items: center; justify-content: center; }
-    .court-card .cc-info { flex: 1; padding: 14px 14px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+    .court-card .cc-info { flex: 1; padding: 14px 14px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; gap: 10px; }
+    @media (min-width: 640px) {
+        .court-card { flex-direction: row; min-height: 130px; }
+        .court-card .cc-img { width: 200px; height: auto; }
+    }
     .court-card .cc-name { font-size: 16px; font-weight: 700; margin: 0 0 2px; color: var(--c-text); }
     .court-card .cc-type { font-size: 12px; color: var(--c-text-muted); margin: 0; }
     .court-card .cc-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 8px; }
@@ -226,6 +230,25 @@
     .toast.success { background: var(--c-accent); }
 
     /* Contacto */
+    /* Disponible hoy (prime time) */
+    .prime-card { background: white; border: 1px solid var(--c-border); border-radius: 14px; padding: 14px; }
+    .prime-loading { color: var(--c-text-muted); font-size: 13px; padding: 8px 0; }
+    .prime-court { padding: 10px 0; border-bottom: 1px solid var(--c-border); }
+    .prime-court:last-child { border-bottom: none; }
+    .prime-court .pc-name { font-size: 14px; font-weight: 700; color: var(--c-text); margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .prime-court .pc-name .pc-count { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: var(--c-text-muted); }
+    .prime-court .pc-name .pc-count.pc-libre { background: var(--c-accent-soft); color: var(--c-accent); }
+    .prime-slots { display: flex; flex-wrap: wrap; gap: 6px; }
+    .prime-slot {
+        padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+        cursor: pointer; border: 1px solid; font-family: inherit;
+    }
+    .prime-slot.libre { background: var(--c-accent-soft); border-color: #bbf7d0; color: var(--c-accent); }
+    .prime-slot.libre:hover { background: var(--c-accent); color: white; }
+    .prime-slot.ocupado { background: #fef2f2; border-color: #fecaca; color: #991b1b; cursor: not-allowed; opacity: .7; text-decoration: line-through; }
+    .prime-slot.pasado { background: #f8fafc; border-color: #e2e8f0; color: var(--c-text-muted); cursor: not-allowed; opacity: .5; }
+    .prime-full { text-align: center; padding: 14px 8px; color: var(--c-danger); font-size: 13px; }
+
     .contact-card { background: white; border: 1px solid var(--c-border); border-radius: 12px; padding: 6px 4px; }
     .contact-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--c-text); text-decoration: none; font-size: 14px; }
     .contact-row svg { color: var(--c-accent); flex-shrink: 0; }
@@ -348,6 +371,12 @@
             {% endif %}
         </div>
         {% endif %}
+
+        <!-- Disponible hoy -->
+        <div class="section-lbl" style="margin-top: 18px;">Disponible hoy <small style="text-transform:none; letter-spacing:0; color: var(--c-text-muted);">· franja noche (6pm – 10pm)</small></div>
+        <div class="prime-card" id="primeCard">
+            <div class="prime-loading">Cargando disponibilidad…</div>
+        </div>
 
         <div class="step-actions">
             <button class="btn-next" type="button" id="btnNext1" disabled>
@@ -524,6 +553,18 @@
     const $ = (id) => document.getElementById(id);
     const fmt = (n) => Math.round(n).toLocaleString('es-CO');
     const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    // Convierte "20:00" o "0:00" a "8:00 PM" / "12:00 AM" (formato 12h)
+    function fmt12(hStr) {
+        if (!hStr) return hStr;
+        let [h, m] = String(hStr).split(':').map(Number);
+        if (isNaN(h)) return hStr;
+        const mm = String(m || 0).padStart(2, '0');
+        if (h === 0 || h === 24) return `12:${mm} am`;
+        if (h === 12) return `12:${mm} pm`;
+        if (h < 12) return `${h}:${mm} am`;
+        return `${h - 12}:${mm} pm`;
+    }
 
     function showToast(msg, type) {
         const t = $('toast');
@@ -769,7 +810,7 @@
                     parcial: 'No alcanzan ' + state.duracion + 'h',
                     pasado: '',
                 }[s.estado];
-                el.innerHTML = `<span class="hora">${s.hora_label} – ${s.hora_fin_label}</span><span class="precio">$${fmt(s.precio)}</span><span class="label">${label}</span>`;
+                el.innerHTML = `<span class="hora">${fmt12(s.hora_label)} – ${fmt12(s.hora_fin_label)}</span><span class="precio">$${fmt(s.precio)}</span><span class="label">${label}</span>`;
                 if (s.estado === 'disponible') {
                     el.addEventListener('click', () => selectSlot(s, el));
                 }
@@ -794,7 +835,7 @@
         const s = state.slotElegido;
         $('tsCancha').textContent = state.canchaNombre;
         $('tsFecha').textContent = formatFechaLong(state.fecha);
-        $('tsHora').textContent = `${s.hora_label} – ${s.hora_fin_label}`;
+        $('tsHora').textContent = `${fmt12(s.hora_label)} – ${fmt12(s.hora_fin_label)}`;
         $('tsTotal').textContent = '$' + fmt(s.precio);
 
         try {
@@ -897,7 +938,7 @@
         $('tkCode').textContent = `Código: #${r.id}`;
         $('tkCancha').textContent = r.cancha;
         $('tkFecha').textContent = formatFechaLong(r.fecha);
-        $('tkHora').textContent = `${r.hora_inicio} – ${r.hora_fin}`;
+        $('tkHora').textContent = `${fmt12(r.hora_inicio)} – ${fmt12(r.hora_fin)}`;
         $('tkCliente').textContent = nombre;
         $('tkPago').textContent = r.tipo_pago.charAt(0).toUpperCase() + r.tipo_pago.slice(1);
         $('tkTotal').textContent = '$' + fmt(r.total);
@@ -905,7 +946,7 @@
         const msg = `Hola! Reservé en ${negocioNombre}:\n` +
                     `• Cancha: ${r.cancha}\n` +
                     `• Fecha: ${formatFechaLong(r.fecha)}\n` +
-                    `• Horario: ${r.hora_inicio} – ${r.hora_fin}\n` +
+                    `• Horario: ${fmt12(r.hora_inicio)} – ${fmt12(r.hora_fin)}\n` +
                     `• Total: $${fmt(r.total)}\n` +
                     `• Código: #${r.id}`;
         const wapp = negocioTel ? `https://wa.me/${negocioTel.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`
@@ -941,7 +982,7 @@
         const targetIso = `${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`;
         const dows = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
-        $('quickText').textContent = `${last.cancha} · ${dows[lastDow]} ${last.hora_inicio}`;
+        $('quickText').textContent = `${last.cancha} · ${dows[lastDow]} ${fmt12(last.hora_inicio)}`;
         $('quickCard').classList.add('show');
 
         $('quickBtn').onclick = async () => {
@@ -961,9 +1002,64 @@
         };
     }
 
+    // ----- Disponible hoy (prime time 18:00 - 22:00) -----
+    async function loadPrimeTime() {
+        const cont = $('primeCard');
+        try {
+            const todayIso = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+            const r = await fetch(`{% url "api_disponibilidad_dia" %}?fecha=${todayIso}&duracion=1`);
+            const data = await r.json();
+            const canchas = data.canchas || [];
+            if (!canchas.length) { cont.innerHTML = '<div class="prime-loading">No hay canchas activas.</div>'; return; }
+
+            const PRIME_HOURS = [18, 19, 20, 21]; // 6pm, 7pm, 8pm, 9pm
+            let html = '';
+            let totalLibres = 0;
+            canchas.forEach(c => {
+                const primeSlots = c.slots.filter(s => PRIME_HOURS.includes(s.hora));
+                if (!primeSlots.length) return;
+                const libres = primeSlots.filter(s => s.estado === 'disponible').length;
+                totalLibres += libres;
+                html += `<div class="prime-court">
+                    <div class="pc-name">
+                        <span>${escapeHtml(c.nombre)}</span>
+                        <span class="pc-count ${libres ? 'pc-libre' : ''}">${libres} libre${libres === 1 ? '' : 's'}</span>
+                    </div>
+                    <div class="prime-slots">`;
+                primeSlots.forEach(s => {
+                    const cls = s.estado === 'disponible' ? 'libre' : (s.estado === 'pasado' ? 'pasado' : 'ocupado');
+                    html += `<button type="button" class="prime-slot ${cls}" data-court="${c.id}" data-hora="${s.hora}" ${s.estado !== 'disponible' ? 'disabled' : ''}>${fmt12(s.hora_label)}</button>`;
+                });
+                html += '</div></div>';
+            });
+            if (!html || totalLibres === 0) {
+                cont.innerHTML = '<div class="prime-full">⚠️ Sin horarios libres entre 6pm – 10pm hoy. Prueba otro día.</div>';
+                return;
+            }
+            cont.innerHTML = html;
+            // Bind clicks: ir directo al paso 2 con la cancha y fecha de hoy
+            cont.querySelectorAll('.prime-slot.libre').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const cid = parseInt(btn.dataset.court, 10);
+                    const cancha = canchas.find(c => c.id === cid);
+                    if (!cancha) return;
+                    state.canchaId = cancha.id;
+                    state.canchaNombre = cancha.nombre;
+                    state.canchaTipo = cancha.tipo;
+                    state.canchaPrecio = cancha.precio_hora;
+                    state.canchas = canchas;
+                    gotoStep(2);
+                });
+            });
+        } catch (e) {
+            cont.innerHTML = '<div class="prime-loading">No se pudo cargar la disponibilidad.</div>';
+        }
+    }
+
     // ----- Init -----
     loadCourts();
     renderQuickCard();
+    loadPrimeTime();
 
     // Auto-refresh slots cada 45s si estoy en step 2 sin sheet abierto
     setInterval(() => {
