@@ -43,9 +43,18 @@ def admin_dashboard(request):
     reservas_pendientes = Reserva.objects.filter(estado='pendiente')
     canchas_activas = Cancha.objects.filter(is_active=True)
 
-    # Ingresos del día
+    # Ingresos del día: cuenta:
+    #  - reservas confirmadas o finalizadas (asumimos cobrado al confirmar/cerrar)
+    #  - O reservas con estado_pago en pagado / abono_30 (cobro explícito)
     ingresos_hoy = sum(
-        r.total for r in reservas_hoy.filter(estado_pago__in=['pagado', 'abono_30'])
+        r.total for r in reservas_hoy.filter(
+            estado__in=['confirmada', 'finalizada'],
+        )
+    ) + sum(
+        r.total for r in reservas_hoy.filter(
+            estado='pendiente',
+            estado_pago__in=['pagado', 'abono_30'],
+        )
     )
 
     # Próximas reservas
@@ -250,16 +259,46 @@ def reserva_admin_crear(request):
 
 @staff_member_required(login_url='/admin-panel/login/')
 def reserva_cambiar_estado(request, pk, nuevo_estado):
-    """Cambiar estado de una reserva."""
+    """Cambiar estado de una reserva. Si pasa a finalizada y el pago está pendiente,
+    marca el pago como 'pagado' (porque la reserva ya se cumplió)."""
     reserva = get_object_or_404(Reserva, pk=pk)
     estados_validos = ['pendiente', 'confirmada', 'cancelada', 'finalizada']
 
     if nuevo_estado in estados_validos:
         reserva.estado = nuevo_estado
-        reserva.save(update_fields=['estado', 'updated_at'])
+        if nuevo_estado == 'finalizada' and reserva.estado_pago == 'pendiente':
+            reserva.estado_pago = 'pagado'
+            reserva.save(update_fields=['estado', 'estado_pago', 'updated_at'])
+        else:
+            reserva.save(update_fields=['estado', 'updated_at'])
         messages.success(request, f'Reserva {reserva.get_estado_display()}.')
 
     return redirect('admin_reserva_detalle', pk=pk)
+
+
+@staff_member_required(login_url='/admin-panel/login/')
+def reserva_cambiar_pago(request, pk, nuevo_pago):
+    """Cambiar estado de pago de una reserva."""
+    reserva = get_object_or_404(Reserva, pk=pk)
+    if nuevo_pago in ('pendiente', 'abono_30', 'pagado'):
+        reserva.estado_pago = nuevo_pago
+        reserva.save(update_fields=['estado_pago', 'updated_at'])
+        messages.success(request, f'Pago marcado como {reserva.get_estado_pago_display()}.')
+    return redirect('admin_reserva_detalle', pk=pk)
+
+
+@staff_member_required(login_url='/admin-panel/login/')
+def reserva_admin_eliminar(request, pk):
+    """Eliminar una reserva (irreversible)."""
+    reserva = get_object_or_404(Reserva, pk=pk)
+    if request.method == 'POST':
+        info = f'#{reserva.pk} · {reserva.cancha.nombre} · {reserva.cliente_nombre}'
+        reserva.delete()
+        messages.success(request, f'Reserva {info} eliminada.')
+        return redirect('admin_reservas')
+    return render(request, 'reservas/admin_panel/reserva_confirm_delete.html', {
+        'reserva': reserva,
+    })
 
 
 @staff_member_required(login_url='/admin-panel/login/')

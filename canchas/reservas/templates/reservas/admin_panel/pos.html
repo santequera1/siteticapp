@@ -1,6 +1,7 @@
 {% extends 'reservas/base_admin.html' %}
 {% load humanize %}
 {% load static %}
+{% load l10n %}
 
 {% block page_title %}POS · Caja{% endblock %}
 
@@ -32,16 +33,23 @@
     .cart { background: white; border: 1px solid var(--c-border); border-radius: 14px; padding: 16px; position: sticky; top: 78px; max-height: calc(100vh - 100px); display: flex; flex-direction: column; }
     .cart-items { flex: 1; overflow-y: auto; margin: 12px 0; }
     .cart-empty { text-align: center; padding: 24px 0; color: var(--c-text-muted); font-size: 13px; }
-    .cart-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--c-border); }
+    .cart-item { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; padding: 10px 0; border-bottom: 1px solid var(--c-border); }
     .cart-item:last-child { border-bottom: none; }
-    .cart-item .ci-info { flex: 1; min-width: 0; }
+    .cart-item .ci-info { min-width: 0; grid-column: 1 / 2; }
     .cart-item .ci-name { font-size: 13px; font-weight: 600; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .cart-item .ci-price { font-size: 11px; color: var(--c-text-muted); }
-    .cart-item .ci-qty { display: flex; align-items: center; gap: 4px; }
-    .cart-item .ci-qty button { width: 24px; height: 24px; border: 1px solid var(--c-border); background: white; border-radius: 6px; cursor: pointer; font-weight: 700; }
-    .cart-item .ci-qty input { width: 36px; text-align: center; border: 1px solid var(--c-border); border-radius: 6px; padding: 3px; font-size: 13px; }
-    .cart-item .ci-sub { font-size: 13px; font-weight: 700; min-width: 60px; text-align: right; }
-    .cart-item .ci-rm { background: none; border: none; cursor: pointer; color: var(--c-danger); font-size: 16px; }
+    .cart-item .ci-price { font-size: 11px; color: var(--c-text-muted); margin-top: 1px; }
+    .cart-item .ci-rm {
+        grid-column: 2 / 3; background: #fee2e2; border: 1px solid #fca5a5;
+        cursor: pointer; color: var(--c-danger); font-size: 18px; font-weight: 700;
+        width: 32px; height: 32px; border-radius: 8px; line-height: 1; padding: 0;
+        font-family: inherit; align-self: start; flex-shrink: 0;
+    }
+    .cart-item .ci-rm:hover { background: var(--c-danger); color: white; }
+    .cart-item .ci-qty { display: flex; align-items: center; gap: 6px; grid-column: 1 / 2; }
+    .cart-item .ci-qty button { width: 28px; height: 28px; border: 1px solid var(--c-border); background: white; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 16px; }
+    .cart-item .ci-qty button:hover { background: #f1f5f9; }
+    .cart-item .ci-qty input { width: 40px; text-align: center; border: 1px solid var(--c-border); border-radius: 6px; padding: 4px; font-size: 13px; }
+    .cart-item .ci-sub { font-size: 14px; font-weight: 700; text-align: right; grid-column: 2 / 3; align-self: center; min-width: 70px; }
     .cart-total { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 2px solid var(--c-border); }
     .cart-total .tl { font-size: 13px; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .cart-total .tv { font-size: 26px; font-weight: 700; color: var(--c-text); }
@@ -81,7 +89,7 @@
 
         <div class="product-grid" id="productGrid">
             {% for p in productos %}
-            <button class="product-btn" type="button" data-cat="{{ p.categoria }}" data-id="{{ p.pk }}" data-name="{{ p.nombre|escapejs }}" data-price="{{ p.precio }}">
+            <button class="product-btn" type="button" data-cat="{{ p.categoria }}" data-id="{{ p.pk }}" data-name="{{ p.nombre|escapejs }}" data-price="{{ p.precio|unlocalize }}">
                 <div class="pimg" style="background-image: url('{% if p.imagen %}{{ p.imagen.url }}{% else %}{% static 'img/logo.webp' %}{% endif %}');"></div>
                 <div class="pn">{{ p.nombre }}</div>
                 <div class="pp">${{ p.precio|floatformat:0|intcomma }}</div>
@@ -167,13 +175,13 @@
                     <div class="ci-name">${escapeHtml(it.nombre)}</div>
                     <div class="ci-price">$${fmt(it.precio)} c/u</div>
                 </div>
+                <button class="ci-rm" type="button" onclick="window.posRm(${idx})" title="Quitar producto" aria-label="Quitar">×</button>
                 <div class="ci-qty">
-                    <button onclick="window.posDec(${idx})">−</button>
+                    <button type="button" onclick="window.posDec(${idx})">−</button>
                     <input type="number" value="${it.cantidad}" min="1" onchange="window.posQty(${idx}, this.value)">
-                    <button onclick="window.posInc(${idx})">+</button>
+                    <button type="button" onclick="window.posInc(${idx})">+</button>
                 </div>
                 <div class="ci-sub">$${fmt(it.precio * it.cantidad)}</div>
-                <button class="ci-rm" onclick="window.posRm(${idx})" title="Quitar">×</button>
             `;
             cont.appendChild(el);
         });

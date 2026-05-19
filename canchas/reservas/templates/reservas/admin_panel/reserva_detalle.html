@@ -64,18 +64,40 @@
     </div>
 
     <div class="card card-padded">
-        <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 700;">Acciones</h3>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 700;">Cambiar estado de la reserva</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;">
             {% if reserva.estado == 'pendiente' %}
                 <a href="{% url 'admin_reserva_estado' reserva.pk 'confirmada' %}" class="btn-primary">Confirmar</a>
+                <a href="{% url 'admin_reserva_estado' reserva.pk 'finalizada' %}" class="btn-primary">Finalizar</a>
                 <a href="{% url 'admin_reserva_estado' reserva.pk 'cancelada' %}" class="btn-danger">Cancelar</a>
             {% elif reserva.estado == 'confirmada' %}
                 <a href="{% url 'admin_reserva_estado' reserva.pk 'finalizada' %}" class="btn-primary">Finalizar</a>
                 <a href="{% url 'admin_reserva_estado' reserva.pk 'cancelada' %}" class="btn-danger">Cancelar</a>
             {% elif reserva.estado == 'cancelada' %}
                 <a href="{% url 'admin_reserva_estado' reserva.pk 'pendiente' %}" class="btn-warning">Reactivar</a>
+            {% elif reserva.estado == 'finalizada' %}
+                <a href="{% url 'admin_reserva_estado' reserva.pk 'confirmada' %}" class="btn-ghost">Volver a confirmada</a>
             {% endif %}
         </div>
+
+        <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 700;">Cambiar estado de pago</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% if reserva.estado_pago != 'pendiente' %}
+                <a href="{% url 'admin_reserva_pago' reserva.pk 'pendiente' %}" class="btn-ghost">Marcar pendiente</a>
+            {% endif %}
+            {% if reserva.estado_pago != 'abono_30' %}
+                <a href="{% url 'admin_reserva_pago' reserva.pk 'abono_30' %}" class="btn-warning">Abono 30%</a>
+            {% endif %}
+            {% if reserva.estado_pago != 'pagado' %}
+                <a href="{% url 'admin_reserva_pago' reserva.pk 'pagado' %}" class="btn-primary">Marcar pagado</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card card-padded" style="margin-top: 14px; border-color: #fecaca;">
+        <h3 style="margin: 0 0 6px; font-size: 14px; font-weight: 700; color: var(--c-danger);">Eliminar reserva</h3>
+        <p style="margin: 0 0 12px; font-size: 12px; color: var(--c-text-muted);">Acción irreversible. Considera cancelar en lugar de eliminar para mantener el histórico.</p>
+        <a href="{% url 'admin_reserva_eliminar' reserva.pk %}" class="btn-danger">Eliminar reserva</a>
     </div>
 </div>
 {% endblock %}

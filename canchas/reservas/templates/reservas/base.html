@@ -42,18 +42,25 @@
         .badge-cancelada   { background: #fee2e2; color: #991b1b; }
         .badge-finalizada  { background: #e2e8f0; color: #334155; }
 
-        /* Selects custom */
+        /* Selects custom con gradients CSS (sin SVG data-URI) */
         select, .form-select {
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
-            width: 100%; padding: 11px 36px 11px 14px; border: 1px solid var(--c-border);
-            border-radius: 10px; font-size: 15px; background: white; color: var(--c-text); font-family: inherit;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-            background-repeat: no-repeat; background-position: right 12px center;
+            width: 100%; padding: 11px 34px 11px 14px; border: 1px solid var(--c-border);
+            border-radius: 10px; font-size: 15px; color: var(--c-text); font-family: inherit;
+            background-color: white;
+            background-image:
+                linear-gradient(45deg, transparent 50%, #64748b 50%),
+                linear-gradient(135deg, #64748b 50%, transparent 50%);
+            background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
             cursor: pointer; box-sizing: border-box; transition: border-color .15s, box-shadow .15s;
         }
         select:focus, .form-select:focus {
             outline: none; border-color: var(--c-accent); box-shadow: 0 0 0 3px rgba(22,163,74,.12);
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2316a34a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+            background-image:
+                linear-gradient(45deg, transparent 50%, #16a34a 50%),
+                linear-gradient(135deg, #16a34a 50%, transparent 50%);
         }
         select::-ms-expand { display: none; }
 
